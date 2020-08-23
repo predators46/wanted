@@ -93,7 +93,7 @@ echo -e "8.8.8.8 53
 8.8.4.4 53" > /root/shadowsocks/dns.conf
 cp /usr/share/zoneinfo/Asia/Makassar /etc/localtime
 supervisorctl restart ssr
-wget -N --no-check-certificate https://raw.githubusercontent.com/predators46/wanted/master/caddy_install.sh install
+wget -N --no-check-certificate https://raw.githubusercontent.com/predators46/wanted/master/caddy_install.sh && chmod +x caddy_install.sh && bash caddy_install.sh install
 echo "http://:2333 {
  root /usr/local/caddy/www/ssr
  timeouts none
