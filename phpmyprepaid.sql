@@ -526,6 +526,7 @@ CREATE TABLE `radacct` (
   `AcctSessionId` varchar(64) NOT NULL default '',
   `AcctUniqueId` varchar(32) NOT NULL default '',
   `UserName` varchar(64) NOT NULL default '',
+  `groupname` varchar(64) NOT NULL DEFAULT '',
   `Realm` varchar(64) default '',
   `NASIPAddress` varchar(15) NOT NULL default '',
   `NASPortId` int(12) default NULL,
@@ -548,6 +549,7 @@ CREATE TABLE `radacct` (
   `FramedIPAddress` varchar(15) NOT NULL default '',
   `AcctStartDelay` int(12) default NULL,
   `AcctStopDelay` int(12) default NULL,
+  `xascendsessionsvrkey` varchar(10) DEFAULT NULL,
   PRIMARY KEY  (`RadAcctId`),
   KEY `UserName` (`UserName`),
   KEY `FramedIPAddress` (`FramedIPAddress`),
@@ -586,8 +588,6 @@ CREATE TABLE `radcheck` (
 --
 -- Dumping data for table `radcheck`
 --
-
-
 
 --
 -- Table structure for table `radgroupcheck`
@@ -724,10 +724,10 @@ CREATE TABLE `radius_template` (
 DROP TABLE IF EXISTS `radpostauth`;
 CREATE TABLE `radpostauth` (
   `id` int(11) NOT NULL auto_increment,
-  `user` varchar(64) NOT NULL default '',
+  `username` varchar(64) NOT NULL default '',
   `pass` varchar(64) NOT NULL default '',
   `reply` varchar(32) NOT NULL default '',
-  `date` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
+  `authdate` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
   PRIMARY KEY  (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
@@ -760,6 +760,27 @@ CREATE TABLE `radreply` (
 -- Dumping data for table `radreply`
 --
 
+--
+-- Table structure for table `radusergroup`
+--
+
+DROP TABLE IF EXISTS `radusergroup`;
+CREATE TABLE `radusergroup` (
+  `username` varchar(64) NOT NULL DEFAULT '',
+  `groupname` varchar(64) NOT NULL DEFAULT '',
+  `priority` int(11) NOT NULL DEFAULT '1',
+  KEY `username` (`username`(32))
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `radusergroup`
+--
+
+
+/*!40000 ALTER TABLE `radusergroup` DISABLE KEYS */;
+LOCK TABLES `radusergroup` WRITE;
+UNLOCK TABLES;
+/*!40000 ALTER TABLE `radusergroup` ENABLE KEYS */;
 
 --
 -- Table structure for table `redirect_pages`
