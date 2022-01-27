@@ -137,12 +137,6 @@ define Package/freeradius2-mod-eap-peap
   TITLE:=EAP/PEAP module
 endef
 
-define Package/freeradius2-mod-eap-pwd
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2-mod-eap @FREERADIUS_OPENSSL
-  TITLE:=EAP/PWD module
-endef
-
 define Package/freeradius2-mod-eap-tls
   $(call Package/freeradius2/Default)
   DEPENDS:=freeradius2-mod-eap @FREERADIUS_OPENSSL
@@ -354,7 +348,7 @@ endef
 
 define Package/freeradius2-mod-ippool
   $(call Package/freeradius2/Default)
-  DEPENDS:=+freeradius2
+  DEPENDS:=+freeradius2 +libgdbm
   TITLE:=Radius Based IP Pool module
 endef
 
@@ -531,16 +525,6 @@ else
   CONFIGURE_ARGS+= --without-rlm_eap_peap
 endif
 
-ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-eap-pwd),)
-  CONFIGURE_ARGS+= \
-		--with-rlm_eap_pwd \
-		--with-rlm_eap_pwd-include-dir="$(STAGING_DIR)/usr/include" \
-		--with-rlm_eap_pwd-lib-dir="$(STAGING_DIR)/usr/lib"
-  CONFIGURE_LIBS+= -lcrypto -lssl
-else
-  CONFIGURE_ARGS+= --without-rlm_eap_pwd
-endif
-
 ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-eap-tls),)
   CONFIGURE_ARGS+= \
   		--with-rlm_eap_tls \
@@ -690,7 +674,6 @@ $(eval $(call BuildPlugin,freeradius2-mod-eap-leap,rlm_eap_leap,))
 $(eval $(call BuildPlugin,freeradius2-mod-eap-md5,rlm_eap_md5,))
 $(eval $(call BuildPlugin,freeradius2-mod-eap-mschapv2,rlm_eap_mschapv2,))
 $(eval $(call BuildPlugin,freeradius2-mod-eap-peap,rlm_eap_peap,))
-$(eval $(call BuildPlugin,freeradius2-mod-eap-pwd,rlm_eap_pwd,))
 $(eval $(call BuildPlugin,freeradius2-mod-eap-tls,rlm_eap_tls,))
 $(eval $(call BuildPlugin,freeradius2-mod-eap-ttls,rlm_eap_ttls,))
 $(eval $(call BuildPlugin,freeradius2-mod-exec,rlm_exec,modules/exec modules/echo ,modules,))
