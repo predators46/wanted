@@ -461,6 +461,11 @@ ENDIF()
 INCLUDE(cmake/abi_check.cmake)
 INCLUDE(cmake/tags.cmake)
 
+IF(NOT CMAKE_CROSSCOMPILING)
+ ADD_EXECUTABLE(comp_err comp_err.c)
+ TARGET_LINK_LIBRARIES(comp_err mysys)
+ENDIF()
+
 CONFIGURE_FILE(config.h.cmake   ${CMAKE_BINARY_DIR}/include/my_config.h)
 CONFIGURE_FILE(config.h.cmake   ${CMAKE_BINARY_DIR}/include/config.h)
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/mysql_version.h.in
