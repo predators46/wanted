@@ -187,7 +187,7 @@ os_atomic_val_compare_and_swap(
 	return(old_val);
 }
 
-#elif defined(IB_STRONG_MEMORY_MODEL)
+#elif defined(IB_STRONG_MEMORY_MODEL) || defined (HAVE_ATOMIC_BUILTINS)
 
 /** Do an atomic test and set.
 @param[in,out]	ptr	Memory location to set
