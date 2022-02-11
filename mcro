@@ -1,0 +1,13 @@
+# ifdef HAVE_IB_ATOMIC_PTHREAD_T_GCC
+#if defined(HAVE_GCC_SYNC_BUILTINS)
+#  define os_compare_and_swap_thread_id(ptr, old_val, new_val) \
+	os_compare_and_swap(ptr, old_val, new_val)
+#else
+UNIV_INLINE
+bool
+os_compare_and_swap_thread_id(volatile os_thread_id_t* ptr, os_thread_id_t old_val, os_thread_id_t new_val)
+{
+  return __atomic_compare_exchange_n(ptr, &old_val, new_val, 0,
+                                     __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+}
+#endif /* HAVE_GCC_SYNC_BUILTINS */
