@@ -61,6 +61,10 @@ typedef ulint lock_word_t;
 
 #define IB_STRONG_MEMORY_MODEL
 
+#else
+
+#define HAVE_ATOMIC_BUILTINS
+
 #endif /* __i386__ || __x86_64__ || _M_IX86 || _M_X64 || __WIN__ */
 
 /** Atomic compare-and-swap and increment for InnoDB. */
@@ -242,8 +246,8 @@ bool os_compare_and_swap_uint64(volatile ib_uint64_t *ptr, ib_uint64_t old_val,
 
 #endif /* HAVE_GCC_SYNC_BUILTINS */
 
-#ifdef HAVE_IB_ATOMIC_PTHREAD_T_GCC
-#if defined(HAVE_GCC_SYNC_BUILTINS)
+#ifdef HAVE_ATOMIC_BUILTINS
+#if defined(HAVE_ATOMIC_BUILTINS)
 #define os_compare_and_swap_thread_id(ptr, old_val, new_val) \
   os_compare_and_swap(ptr, old_val, new_val)
 #else
