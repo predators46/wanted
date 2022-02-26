@@ -1,703 +1,439 @@
 #
-# Copyright (C) 2008-2015 OpenWrt.org
+# Copyright (C) 2015 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
 #
 
+# 
+# Original Boost 1.51 Makefile by Mirko Vogt <mirko@openwrt.org>
+# Dude, this "boost" is really one of the most crude stuff I ported yet.
+#
+
+
 include $(TOPDIR)/rules.mk
+include $(INCLUDE_DIR)/nls.mk
+include $(INCLUDE_DIR)/target.mk 
 
-PKG_NAME:=freeradius2
-PKG_VERSION:=2.2.10
-PKG_RELEASE:=1
-PKG_BUILD_DEPENDS:=libtool
+PKG_NAME:=boost
+PKG_VERSION:=1_59_0
+PKG_RELEASE:=8
 
-PKG_SOURCE:=freeradius-server-$(PKG_VERSION).tar.bz2
-PKG_SOURCE_URL:=\
-	ftp://ftp.freeradius.org/pub/freeradius/ \
-	ftp://ftp.freeradius.org/pub/freeradius/old/
-PKG_MD5SUM:=f1ce12d2b8258585cb3d525f5bdfeb17
-PKG_MAINTAINER:=Daniel Golle <daniel@makrotopia.org>
-PKG_LICENSE:=GPL-2.0
-PKG_LICENSE_FILES:=COPYRIGHT LICENSE
+PKG_SOURCE:=$(PKG_NAME)_$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=@SF/boost
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)_$(PKG_VERSION)
+HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/$(PKG_NAME)_$(PKG_VERSION)
+PKG_MD5SUM:=51528a0e3b33d9e10aaa311d9eb451e3
+PKG_LICENSE:=Boost Software License <http://www.boost.org/users/license.html>
+PKG_MAINTAINER:=Carlos M. Ferreira <carlosmf.pt@gmail.com>
 
-PKG_BUILD_DIR:=$(BUILD_DIR)/freeradius-server-$(PKG_VERSION)
-PKG_FIXUP:=autoreconf
-PKG_CHECK_FORMAT_SECURITY:=0
+PKG_BUILD_DEPENDS += boost/host 
+PKG_BUILD_PARALLEL:=0
+PKG_USE_MIPS16:=0
 
-PKG_CONFIG_DEPENDS := \
-  FREERADIUS_OPENSSL \
-  FREERADIUS_NOSSL
-
-PKG_CHECK_FORMAT_SECURITY:=0
 include $(INCLUDE_DIR)/package.mk
-
-define Package/freeradius2/config
-  source "$(SOURCE)/Config.in"
-endef
-
-define Package/freeradius2/Default
-  SECTION:=net
-  CATEGORY:=Network
-  URL:=http://freeradius.org/
-  SUBMENU:=FreeRADIUS (version 2)
-endef
-
-define Package/freeradius2
-  $(call Package/freeradius2/Default)
-  DEPENDS:=+libltdl +libreadline +freeradius2-common
-  TITLE:=A flexible RADIUS server (version 2)
-endef
-
-define Package/freeradius2/conffiles
-/etc/freeradius2/clients.conf
-/etc/freeradius2/radiusd.conf
-/etc/freeradius2/sites/default
-endef
-
-define Package/freeradius2-democerts
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=Demo certificates to test the server
-endef
-
-define Package/freeradius2-common
-  $(call Package/freeradius2/Default)
-  TITLE:=common files
-  DEPENDS:=+libpthread +FREERADIUS_OPENSSL:libopenssl +zlib
-endef
-
-define Package/freeradius2-mod-chap
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=CHAP module
-endef
-
-define Package/freeradius2-mod-chap/conffiles
-/etc/freeradius2/modules/chap
-endef
-
-define Package/freeradius2-mod-detail
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=Detailed accounting module
-endef
-
-define Package/freeradius2-mod-detail/conffiles
-/etc/freeradius2/modules/detail
-endef
-
-define Package/freeradius2-mod-digest
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=HTTP Digest Authentication
-endef
-
-define Package/freeradius2-mod-digest/conffiles
-/etc/freeradius2/modules/digest
-endef
-
-define Package/freeradius2-mod-eap
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=Base EAP module
-endef
-
-define Package/freeradius2-mod-eap/conffiles
-/etc/freeradius2/eap.conf
-endef
-
-define Package/freeradius2-mod-eap-gtc
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2-mod-eap
-  TITLE:=EAP/GTC module
-endef
-
-define Package/freeradius2-mod-eap-leap
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2-mod-eap
-  TITLE:=EAP/LEAP module
-endef
-
-define Package/freeradius2-mod-eap-md5
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2-mod-eap
-  TITLE:=EAP/MD5 module
-endef
-
-define Package/freeradius2-mod-eap-mschapv2
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2-mod-eap +freeradius2-mod-mschap
-  TITLE:=EAP/MS-CHAPv2 module
-endef
-
-define Package/freeradius2-mod-eap-peap
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2-mod-eap @FREERADIUS_OPENSSL
-  TITLE:=EAP/PEAP module
-endef
-
-define Package/freeradius2-mod-eap-tls
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2-mod-eap @FREERADIUS_OPENSSL
-  TITLE:=EAP/TLS module
-endef
-
-define Package/freeradius2-mod-eap-ttls
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2-mod-eap-tls
-  TITLE:=EAP/TTLS module
-endef
-
-define Package/freeradius2-mod-exec
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=EXEC module
-endef
-
-define Package/freeradius2-mod-exec/conffiles
-/etc/freeradius2/modules/exec
-endef
-
-define Package/freeradius2-mod-expiration
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=Expiration module
-endef
-
-define Package/freeradius2-mod-expiration/conffiles
-/etc/freeradius2/modules/expiration
-endef
-
-define Package/freeradius2-mod-always
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=Always module
-endef
-
-define Package/freeradius2-mod-always/conffiles
-/etc/freeradius2/modules/always
-endef
-
-define Package/freeradius2-mod-expr
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=EXPR module
-endef
-
-define Package/freeradius2-mod-expr/conffiles
-/etc/freeradius2/modules/expr
-endef
-
-define Package/freeradius2-mod-attr-filter
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=ATTR filter module
-endef
-
-define Package/freeradius2-mod-attr-filter/conffiles
-/etc/freeradius2/modules/attr_filter
-/etc/freeradius2/attrs
-/etc/freeradius2/attrs.access_reject
-/etc/freeradius2/attrs.accounting_response
-/etc/freeradius2/attrs.pre-proxy
-endef
-
-define Package/freeradius2-mod-attr-rewrite
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=ATTR rewrite module
-endef
-
-define Package/freeradius2-mod-attr-rewrite/conffiles
-/etc/freeradius2/modules/attr_rewrite
-endef
-
-define Package/freeradius2-mod-files
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=Module using local files for authorization
-endef
-
-define Package/freeradius2-mod-files/conffiles
-/etc/freeradius2/acct_users
-/etc/freeradius2/preproxy_users
-/etc/freeradius2/users
-/etc/freeradius2/modules/files
-endef
-
-define Package/freeradius2-mod-passwd
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=Rlm passwd module
-endef
-
-define Package/freeradius2-mod-passwd/conffiles
-/etc/freeradius2/modules/passwd
-endef
-
-define Package/freeradius2-mod-ldap
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2 +libopenldap
-  TITLE:=LDAP module
-endef
-
-define Package/freeradius2-mod-ldap/conffiles
-/etc/freeradius2/ldap.attrmap
-/etc/freeradius2/modules/ldap
-endef
-
-define Package/freeradius2-mod-logintime
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=Logintime module
-endef
-
-define Package/freeradius2-mod-logintime/conffiles
-/etc/freeradius2/modules/logintime
-endef
-
-define Package/freeradius2-mod-mschap
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=MS-CHAP and MS-CHAPv2 module
-endef
-
-define Package/freeradius2-mod-mschap/conffiles
-/etc/freeradius2/modules/mschap
-endef
-
-define Package/freeradius2-mod-pap
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=PAP module
-endef
-
-define Package/freeradius2-mod-pap/conffiles
-/etc/freeradius2/modules/pap
-endef
-
-define Package/freeradius2-mod-preprocess
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=Request pre-processing module
-endef
-
-define Package/freeradius2-mod-preprocess/conffiles
-/etc/freeradius2/hints
-/etc/freeradius2/huntgroups
-/etc/freeradius2/modules/preprocess
-endef
-
-define Package/freeradius2-mod-realm
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=Realms handling module
-endef
-
-define Package/freeradius2-mod-realm/conffiles
-/etc/freeradius2/proxy.conf
-/etc/freeradius2/modules/realm
-endef
-
-define Package/freeradius2-mod-sql
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=Base SQL module
-endef
-
-define Package/freeradius2-mod-sql/conffiles
-/etc/freeradius2/sql.conf
-endef
-
-define Package/freeradius2-mod-sql-mysql
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2-mod-sql +libmysqlclient-r
-  TITLE:=MySQL module
-endef
-
-define Package/freeradius2-mod-sql-pgsql
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2-mod-sql +libpq
-  TITLE:=PostgreSQL module
-endef
-
-define Package/freeradius2-mod-sql-sqlite
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2-mod-sql +libsqlite3
-  TITLE:=SQLite module
-endef
-
-define Package/freeradius2-mod-sqlcounter
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2-mod-sql
-  TITLE:=Generic SQL Counter module
-endef
-
-define Package/freeradius2-mod-sqlippool
-  $(call Package/freeradius2/Default)
-  DEPENDS:=+freeradius2-mod-sql
-  TITLE:=Radius SQL Based IP Pool module
-endef
-
-define Package/freeradius2-mod-sqlippool/conffiles
-/etc/freeradius2/sqlippool.conf
-/etc/freeradius2/modules/dhcp_sqlippool
-/etc/freeradius2/sql
-endef
-
-define Package/freeradius2-mod-ippool
-  $(call Package/freeradius2/Default)
-  DEPENDS:=+freeradius2 +libgdbm
-  TITLE:=Radius Based IP Pool module
-endef
-
-define Package/freeradius2-mod-ippool/conffiles
-/etc/freeradius2/modules/ippool
-endef
-
-define Package/freeradius2-mod-radutmp
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=Radius UTMP module
-endef
-
-define Package/freeradius2-mod-radutmp/conffiles
-/etc/freeradius2/modules/radutmp
-/etc/freeradius2/modules/sradutmp
-endef
-
-define Package/freeradius2-mod-unix
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=System Authentication
-endef
-
-define Package/freeradius2-mod-unix/conffiles
-/etc/freeradius2/modules/unix
-endef
-
-define Package/freeradius2-utils
-  $(call Package/freeradius2/Default)
-  DEPENDS:=+freeradius2-common
-  TITLE:=Misc. client utilities
-endef
-
-define Package/freeradius2-mod-sqllog
-  $(call Package/freeradius2/Default)
-  DEPENDS:=freeradius2
-  TITLE:=SQL Logging module
-endef
-
-CONFIGURE_ARGS+= \
-	--libdir=/usr/lib/freeradius2 \
-	--libexecdir=/usr/lib/freeradius2 \
-	--enable-shared \
-	--disable-static \
-	--disable-developer \
-	--with-threads \
-	$(if $(CONFIG_FREERADIUS_OPENSSL),--with,--without)-openssl \
-	$(if $(CONFIG_FREERADIUS_OPENSSL),--with-openssl-includes="$(STAGING_DIR)/usr/include",) \
-	$(if $(CONFIG_FREERADIUS_OPENSSL),--with-openssl-libraries="$(STAGING_DIR)/usr/lib",) \
-	$(if $(CONFIG_FREERADIUS_OPENSSL),--disable-openssl-version-check,) \
-	--with-system-libtool \
-	--with-system-libltdl \
-	--enable-strict-dependencies \
-	--with-raddbdir=/etc/freeradius2 \
-	--with-radacctdir=/var/db/radacct \
-	--with-logdir=/var/log \
-	--without-edir \
-	--without-snmp \
-	--without-rlm_checkval \
-	--without-rlm_dbm \
-	--without-rlm_counter \
-	--with-rlm_expr \
-	--with-rlm_eap \
-	--without-rlm_eap_sim \
-	--without-rlm_example \
-	--without-rlm_krb5 \
-	--without-rlm_otp \
-	--without-rlm_smsotp \
-	--without-rlm_pam \
-	--without-rlm_perl \
-	--without-rlm_python \
-	--without-rlm_smb \
-	--with-rlm_sql \
-	--with-rlm_sqlcounter \
-	--without-rlm_sqlhpwippool \
-	--without-rlm_sql_db2 \
-	--without-rlm_sql_firebird \
-	--without-rlm_sql_freetds \
-	--without-rlm_sql_iodbc \
-	--without-rlm_sql_oracle \
-	--without-rlm_sql_sybase \
-	--without-rlm_sql_unixodbc \
-	--without-rlm_sql_log \
-	--without-rlm_eap_tnc \
-	--without-rlm_eap_ikev2 \
-	--without-rlm_opendirectory \
-	--without-rlm_wimax \
-	--without-rlm_ruby \
-	--without-rlm_caching \
-	--without-rlm_redis \
-	--without-rlm_rediswho \
-	--without-rlm_soh \
-	--without-rlm_sim \
-	--without-rlm_replicate \
-	--without-rlm_protocol_filter \
-	--without-rlm_policy \
-	--without-rlm_linelog \
-	--without-rlm_jradius \
-	--without-rlm_fastusers \
-	--without-rlm_dynamic_clients \
-	--without-rlm_cram \
-	--without-rlm_copy_packet \
-	--without-rlm_acct_unique \
-	--without-rlm_acctlog
-	
-
-PKG_DICTIONARIES:= \
-	freeradius freeradius.internal \
-	rfc2865 rfc2866 rfc2867 rfc2868 rfc2869 rfc3162 rfc3576 rfc3580 \
-	rfc4372 rfc4675 rfc4679 \
-	microsoft \
-	wispr \
-
-ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-ldap),)
-  CONFIGURE_ARGS+= \
-		--with-rlm_ldap-include-dir="$(STAGING_DIR)/usr/include" \
-		--with-rlm_ldap-lib-dir="$(STAGING_DIR)/usr/lib"
-  CONFIGURE_LIBS+= -lcrypto -lssl
-else
-  CONFIGURE_ARGS+= --without-rlm_ldap
-endif
-
-ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-sql-mysql),)
-  CONFIGURE_ARGS+= \
-		--with-mysql-include-dir="$(STAGING_DIR)/usr/include" \
-		--with-mysql-lib-dir="$(STAGING_DIR)/usr/lib/mysql"
-  CONFIGURE_LIBS+= -lz
-  CONFIGURE_VARS+= ac_cv_lib_mysqlclient_r_mysql_init=yes
-else
-  CONFIGURE_ARGS+= --without-rlm_sql_mysql
-endif
-
-ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-sql-pgsql),)
-  CONFIGURE_ARGS+= \
-		--with-rlm_sql_postgresql-include-dir="$(STAGING_DIR)/usr/include" \
-		--with-rlm_sql_postgresql-lib-dir="$(STAGING_DIR)/usr/lib"
-else
-  CONFIGURE_ARGS+= --without-rlm_sql_postgresql
-endif
-
-ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-sqllog),)
-  CONFIGURE_ARGS+= \
-        --with-rlm_sql_log \
-        --with-experimental-modules \
-else
-  CONFIGURE_ARGS+= --without-rlm_sql_log
-endif
-
-
-ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-sql-sqlite),)
-  CONFIGURE_ARGS+= \
-	--with-rlm_sql_sqlite \
-	--with-experimental-modules \
-	--with-sqlite-include-dir="$(STAGING_DIR)/usr/include" \
-	--with-sqlite-lib-dir="$(STAGING_DIR)/usr/lib"
-else
-  CONFIGURE_ARGS+= --without-rlm_sql_sqlite
-endif
-
-ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-sqlippool),)
-  CONFIGURE_ARGS+= --with-rlm_sqlippool
-else
-  CONFIGURE_ARGS+= --without-rlm_sqlippool
-endif
-
-ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-eap-peap),)
-  CONFIGURE_ARGS+= \
-  		--with-rlm_eap_peap \
-		--with-rlm_eap_peap-include-dir="$(STAGING_DIR)/usr/include" \
-		--with-rlm_eap_peap-lib-dir="$(STAGING_DIR)/usr/lib"
-  CONFIGURE_LIBS+= -lcrypto -lssl
-else
-  CONFIGURE_ARGS+= --without-rlm_eap_peap
-endif
-
-ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-eap-tls),)
-  CONFIGURE_ARGS+= \
-  		--with-rlm_eap_tls \
-		--with-rlm_eap_tls-include-dir="$(STAGING_DIR)/usr/include" \
-		--with-rlm_eap_tls-lib-dir="$(STAGING_DIR)/usr/lib"
-  CONFIGURE_LIBS+= -lcrypto -lssl
-else
-  CONFIGURE_ARGS+= --without-rlm_eap_tls
-endif
-
-ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-eap-ttls),)
-  CONFIGURE_ARGS+= \
-  		--with-rlm_eap_ttls \
-		--with-rlm_eap_ttls-include-dir="$(STAGING_DIR)/usr/include" \
-		--with-rlm_eap_ttls-lib-dir="$(STAGING_DIR)/usr/lib"
-  CONFIGURE_LIBS+= -lcrypto -lssl
-else
-  CONFIGURE_ARGS+= --without-rlm_eap_ttls
-endif
-
-ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-attr-rewrite),)
-  CONFIGURE_ARGS+= --with-rlm_attr-rewrite
-else
-  CONFIGURE_ARGS+= --without-rlm_attr-rewrite
-endif
-
-ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-radutmp),)
-  CONFIGURE_ARGS+= --with-rlm_radutmp
-else
-  CONFIGURE_ARGS+= --without-rlm_radutmp
-endif
-
-ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-logintime),)
-  CONFIGURE_ARGS+= --with-rlm_logintime
-else
-  CONFIGURE_ARGS+= --without-rlm_logintime
-endif
-
-ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-expiration),)
-  CONFIGURE_ARGS+= --with-rlm_expiration
-else
-  CONFIGURE_ARGS+= --without-rlm_expiration
-endif
-
-ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-always),)
-  CONFIGURE_ARGS+= --with-rlm_always
-else
-  CONFIGURE_ARGS+= --without-rlm_always
-endif
-
-ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-ippool),)
-  CONFIGURE_ARGS+= --with-rlm_ippool
-else
-  CONFIGURE_ARGS+= --without-rlm_ippool
-endif
-
-ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-unix),)
-  CONFIGURE_ARGS+= --with-rlm_unix
-else
-  CONFIGURE_ARGS+= --without-rlm_unix
-endif
-
-CONFIGURE_VARS+= \
-	LDFLAGS="$$$$LDFLAGS" \
-	LIBS="$(CONFIGURE_LIBS)" \
-	MYSQL_CONFIG="no" \
-	ac_cv_lib_readline=no \
-
-define Build/Compile
-	$(MAKE) -C $(PKG_BUILD_DIR) \
-		R="$(PKG_INSTALL_DIR)" \
-		INSTALLSTRIP="" LIBTOOL:="$(STAGING_DIR)/host/libltdl/bin/libtool" \
-		all certs install
-    endef
-
-define Package/freeradius2-common/install
-	$(INSTALL_DIR) $(1)/etc/freeradius2
-	chmod 771 $(1)/etc/freeradius2
-	$(CP) $(PKG_INSTALL_DIR)/etc/freeradius2/dictionary $(1)/etc/freeradius2/ ; \
-	$(INSTALL_DIR) $(1)/usr/lib/freeradius2
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/freeradius2/libfreeradius-radius{,-*}.so $(1)/usr/lib/freeradius2
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/freeradius2/libfreeradius-eap{,-*}.so $(1)/usr/lib/freeradius2
-	$(INSTALL_DIR) $(1)/usr/share/freeradius2
-	$(CP) $(PKG_INSTALL_DIR)/usr/share/freeradius/dictionary $(1)/usr/share/freeradius2/
-	$(SED) "s,^\(\$$$$INCLUDE\),#\1,g" $(1)/usr/share/freeradius2/dictionary
-	for f in $(PKG_DICTIONARIES); do \
-		$(CP) $(PKG_INSTALL_DIR)/usr/share/freeradius/dictionary.$$$${f} $(1)/usr/share/freeradius2/ ; \
-		$(SED) "s,^#\(\$$$$INCLUDE dictionary\.$$$${f}\),\1,g" $(1)/usr/share/freeradius2/dictionary ; \
-	done
-endef
-
-define Package/freeradius2/install
-	$(INSTALL_DIR) $(1)/etc/freeradius2/modules
-	$(INSTALL_DIR) $(1)/etc/freeradius2/sites
-	for f in clients.conf radiusd.conf policy.conf; do \
-		$(CP) $(PKG_INSTALL_DIR)/etc/freeradius2/$$$${f} $(1)/etc/freeradius2/ ; \
-	done
-	$(CP) $(PKG_INSTALL_DIR)/etc/freeradius2/sites-available/default $(1)/etc/freeradius2/sites/default
-	$(INSTALL_DIR) $(1)/usr/sbin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/radiusd $(1)/usr/sbin/
-	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./files/radiusd.init $(1)/etc/init.d/radiusd
-endef
-
-define Package/freeradius2-democerts/install
-	$(INSTALL_DIR) $(1)/etc/freeradius2/certs
-	$(CP) \
-		$(PKG_BUILD_DIR)/raddb/certs/ca.pem \
-		$(PKG_BUILD_DIR)/raddb/certs/dh \
-		$(PKG_BUILD_DIR)/raddb/certs/random \
-		$(PKG_BUILD_DIR)/raddb/certs/server.pem \
-		$(1)/etc/freeradius2/certs/
-endef
-
-define Package/freeradius2-utils/install
-	$(INSTALL_DIR) $(1)/usr/bin
-	for f in radclient radeapclient radwho; do \
-		$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/$$$${f} $(1)/usr/bin/ ; \
-	done
-endef
-
-define BuildPlugin
-  define Package/$(1)/install
-	[ -z "$(2)" ] || $(INSTALL_DIR) $$(1)/usr/lib/freeradius2
-	for m in $(2); do \
-		$(CP) $(PKG_INSTALL_DIR)/usr/lib/freeradius2/$$$$$$$${m}{,-*}.so $$(1)/usr/lib/freeradius2 ; \
-	done
-	[ -z "$(3)" ] || $(INSTALL_DIR) $$(1)/etc/freeradius2
-	[ -z "$(4)" ] || $(INSTALL_DIR) $$(1)/etc/freeradius2/$(4)
-	for f in $(3); do \
-		$(CP) $(PKG_INSTALL_DIR)/etc/freeradius2/$$$$$$$${f} $$(1)/etc/freeradius2/$$$$$$$${f} ; \
-	done
+include $(INCLUDE_DIR)/host-build.mk
+
+
+define Package/boost/Default
+  SECTION:=libs
+  CATEGORY:=Libraries
+  TITLE:=Boost C++ source library
+  URL:=http://www.boost.org
+  DEPENDS:=+libstdcpp +libpthread +librt
+endef
+
+define Package/boost/description/Default
+  true
+endef
+
+define Package/boost/description
+This package provides the Boost v1.59 libraries.
+Boost is a set of free, peer-reviewed, portable C++ source libraries.
+This package provides the following libraries:
+ - atomic
+ - chrono
+ - container
+ - context
+ - coroutine
+ - - coroutine2 (requires GCC v5 and up)
+ - date_time
+ - exception
+ - filesystem
+ - graph
+ - - graph-parallel
+ - iostreams
+ - locale
+ - log
+ - math
+ - program_options
+ - python
+ - python3
+ - random
+ - regex
+ - serialization
+ - signals
+ - system
+ - thread
+ - timer
+ - wave
+endef
+
+BOOST_LIBS =
+
+define Package/boost-libs
+$(call Package/boost/Default)
+  TITLE+= (all libs)
+  DEPENDS+= $(BOOST_DEPENDS)
+  HIDDEN:=1
+endef
+
+define Package/boost-libs/description
+$(call Package/boost/description/Default)
+ .
+ This meta package contains only dependencies to the other libraries from
+ the boost libraries collection.
+endef
+
+# Create a meta-package of dependent libraries (for ALL)
+define Package/boost-libs/install
+  true
+endef
+
+define Package/boost/install
+  true
+endef
+
+
+define Package/boost
+  $(call Package/boost/Default)
+  TITLE+= packages
+  DEPENDS:=+ALL:boost-libs +ALL:boost-test
+endef
+
+define Package/boost/config
+    menu "Select Boost Options"
+      depends on PACKAGE_boost
+      	comment "Boost compilation options."
+
+      	choice
+      		prompt "Compile Boost libraries."
+      			default boost-static-and-shared-libs
+      			help
+      				Choose which version to compile.
+      				 -> Shared:
+      				    - Only Shared libs will be compiled.
+      				 -> Static:
+      				    - Only Static libs will be compiled.
+      				 -> Both:
+      				    - Both Static and Shared libs will be compiled.		    
+
+		    config boost-shared-libs
+		    	bool "Shared"
+			
+			config boost-static-libs
+		    	bool "Static"		    	
+			
+			config boost-static-and-shared-libs
+		    	bool "Both"		    	
+	    endchoice
+
+      	choice
+      		prompt "Selects Boost Runtime linkage."
+      		default boost-runtime-shared
+      		help
+      			Choose which C and C++ runtimes to use:
+      			 -> Use Shared runtimes.
+      			 -> Use Static runtimes.
+      			    - Not available if Shared libs are to be built.
+      			 -> Use both runtimes.
+      			    - Not available if Shared libs are to be built.
+      			    - Two seperate versions of Boost are built, linking each to a different runtime. 
+      			    - This option requires "Use tagged names" option to be active.
+
+		    config boost-runtime-shared
+		    	bool "Shared"
+
+		    config boost-runtime-static
+		    	depends on @(!boost-shared-libs&&!boost-static-and-shared-libs)
+		    	bool "Static"		    	
+		    
+		    config boost-runtime-static-and-shared
+		    	depends on @(boost-use-name-tags&&!boost-shared-libs&&!boost-static-and-shared-libs)
+		    	bool "Both"
+	    endchoice
+
+      	choice
+      		prompt "Select a Variant."
+      		default boost-variant-release
+      		help
+      			Chooses which boost variant should be selected:
+      			-> Release: Optimizes Boost for release.
+      			   - Optimization: Speed;  Debug Symbols: Off; Inlining: Full; Runtime Debugging: Off.
+      			-> Debug: 
+      			   - Optimization: Off; Debug Symbols: On; Inlining: Off; Runtime Debugging: On.
+      			-> Profile:
+      			   - Profiling: On;  Debug Symbols: On.
+
+      		config boost-variant-release
+      			bool "Release"
+
+      		config boost-variant-debug
+      			bool "Debug"
+      				
+      		config boost-variant-profile
+      			bool "Profile"
+      	endchoice	    	
+
+	    config boost-use-name-tags
+	    	bool "Use tagged names."
+	    	help 
+	    		Add name tags the lib files, to diferentiate each library version:
+	    		  "-mt" for multi-threading.
+	    		  "-d" for debugging.
+	    		  "-s" for runtime static link".
+	    		Might break compatibility with libraries that expect boost libs with default names.
+	    	default n	    	
+
+	    config boost-single-thread
+	    	depends on @boost-use-name-tags
+	    	bool "Single thread Support."
+	    	help 
+	    		Compile Boost libraries in single-thread mode.
+	    	default n
+			    
+	    config boost-build-type-complete
+	    	depends on @boost-use-name-tags
+	    	bool "Complete Boost Build."
+	    	help 
+	    		Builds both release and debug libs. It will take much longer to compile.
+	    	default n	    	
+    endmenu
+
+    menu "Select Boost libraries"
+      depends on PACKAGE_boost
+		comment "Libraries"
+
+		config boost-libs-all
+		bool "Include all Boost libraries."
+	    	select PACKAGE_boost-libs	    	
+
+		config boost-test-pkg
+		bool "Boost test package."
+	    	select PACKAGE_boost-test
+	    
+		config boost-coroutine2
+		depends on @GCC_VERSION_5
+		bool "Boost couroutine2 support."
+		select PACKAGE_boost-coroutine
+		default n
+
+		config boost-graph-parallel
+		bool "Boost parallel graph support."
+		select PACKAGE_boost-graph
+		default n
+
+		$(foreach lib,$(BOOST_LIBS), \
+		  config PACKAGE_boost-$(lib)
+		  prompt "Boost $(lib) library."
+		)
+  	endmenu
+
+endef
+
+PKG_CONFIG_DEPENDS:= CONFIG_PACKAGE_boost-test
+
+define Package/boost-test
+  $(call Package/boost/Default)
+  TITLE+= (test)
+  HIDDEN:=1  
+  DEPENDS+=+boost-system +boost-timer
+endef
+
+define Build/Configure
+endef
+
+# 1: short name
+# 2: dependencies on other boost libraries (short name)
+# 3: dependencies on other packages
+define DefineBoostLibrary
+
+  BOOST_DEPENDS+= +boost-$(1) 
+  BOOST_LIBS+= $(1)
+
+  PKG_CONFIG_DEPENDS+= CONFIG_PACKAGE_boost-$(1)
+
+  define Package/boost-$(1)
+    $(call Package/boost/Default)
+    TITLE+= ($(1))
+    DEPENDS+= $$(foreach lib,$(2),+boost-$$(lib)) $(3)
+    HIDDEN:=1
   endef
 
-  $$(eval $$(call BuildPackage,$(1)))
+  define Package/boost-$(1)/description
+   $(call Package/boost/description/Default)
+   .
+   This package contains the Boost $(1) library.
+  endef
 endef
 
-$(eval $(call BuildPackage,freeradius2))
-$(eval $(call BuildPackage,freeradius2-common))
-$(eval $(call BuildPackage,freeradius2-democerts))
-$(eval $(call BuildPlugin,freeradius2-mod-chap,rlm_chap,modules/chap,modules,))
-$(eval $(call BuildPlugin,freeradius2-mod-detail,rlm_detail,modules/detail,modules,))
-$(eval $(call BuildPlugin,freeradius2-mod-digest,rlm_digest,modules/digest,modules,))
-$(eval $(call BuildPlugin,freeradius2-mod-eap,rlm_eap,eap.conf))
-$(eval $(call BuildPlugin,freeradius2-mod-eap-gtc,rlm_eap_gtc,))
-$(eval $(call BuildPlugin,freeradius2-mod-eap-leap,rlm_eap_leap,))
-$(eval $(call BuildPlugin,freeradius2-mod-eap-md5,rlm_eap_md5,))
-$(eval $(call BuildPlugin,freeradius2-mod-eap-mschapv2,rlm_eap_mschapv2,))
-$(eval $(call BuildPlugin,freeradius2-mod-eap-peap,rlm_eap_peap,))
-$(eval $(call BuildPlugin,freeradius2-mod-eap-tls,rlm_eap_tls,))
-$(eval $(call BuildPlugin,freeradius2-mod-eap-ttls,rlm_eap_ttls,))
-$(eval $(call BuildPlugin,freeradius2-mod-exec,rlm_exec,modules/exec modules/echo ,modules,))
-$(eval $(call BuildPlugin,freeradius2-mod-attr-rewrite,rlm_attr_rewrite,modules/attr_rewrite,modules,))
-$(eval $(call BuildPlugin,freeradius2-mod-files,rlm_files,acct_users preproxy_users users modules/files,modules,))
-$(eval $(call BuildPlugin,freeradius2-mod-passwd,rlm_passwd,modules/passwd,modules,))
-$(eval $(call BuildPlugin,freeradius2-mod-ldap,rlm_ldap,ldap.attrmap modules/ldap,modules,))
-$(eval $(call BuildPlugin,freeradius2-mod-mschap,rlm_mschap,modules/mschap,modules,))
-$(eval $(call BuildPlugin,freeradius2-mod-pap,rlm_pap,modules/pap,modules,))
-$(eval $(call BuildPlugin,freeradius2-mod-preprocess,rlm_preprocess,hints huntgroups modules/preprocess,modules,))
-$(eval $(call BuildPlugin,freeradius2-mod-realm,rlm_realm,proxy.conf modules/realm modules/inner-eap,modules,))
-$(eval $(call BuildPlugin,freeradius2-mod-sql,rlm_sql,sql.conf,))
-$(eval $(call BuildPlugin,freeradius2-mod-sql-mysql,rlm_sql_mysql,))
-$(eval $(call BuildPlugin,freeradius2-mod-sql-pgsql,rlm_sql_postgresql,))
-$(eval $(call BuildPlugin,freeradius2-mod-sql-sqlite,rlm_sql_sqlite,))
-$(eval $(call BuildPlugin,freeradius2-mod-sqlcounter,rlm_sqlcounter,))
-$(eval $(call BuildPlugin,freeradius2-mod-sqlippool,rlm_sqlippool,sqlippool.conf sql modules/dhcp_sqlippool,modules,))
-$(eval $(call BuildPlugin,freeradius2-mod-sqllog,rlm_sql_log,))
-$(eval $(call BuildPlugin,freeradius2-mod-radutmp,rlm_radutmp,modules/radutmp modules/sradutmp,modules,))
-$(eval $(call BuildPlugin,freeradius2-mod-logintime,rlm_logintime,modules/logintime,modules,))
-$(eval $(call BuildPlugin,freeradius2-mod-expr,rlm_expr,modules/expr,modules,))
-$(eval $(call BuildPlugin,freeradius2-mod-attr-filter,rlm_attr_filter,modules/attr_filter attrs attrs.access_reject attrs.accounting_response attrs.pre-proxy,modules,,))
-$(eval $(call BuildPlugin,freeradius2-mod-expiration,rlm_expiration,modules/expiration,modules,))
-$(eval $(call BuildPlugin,freeradius2-mod-always,rlm_always,modules/always,modules,))
-$(eval $(call BuildPlugin,freeradius2-mod-ippool,rlm_ippool,modules/ippool,modules,))
-$(eval $(call BuildPlugin,freeradius2-mod-unix,rlm_unix,modules/unix,modules,))
-$(eval $(call BuildPackage,freeradius2-utils))
+
+$(eval $(call DefineBoostLibrary,atomic,system,))
+$(eval $(call DefineBoostLibrary,chrono,system,))
+$(eval $(call DefineBoostLibrary,container,,))
+$(eval $(call DefineBoostLibrary,context,chrono system thread,))
+$(eval $(call DefineBoostLibrary,coroutine,system chrono context thread,))
+$(eval $(call DefineBoostLibrary,date_time,,))
+#$(eval $(call DefineBoostLibrary,exception,,))
+$(eval $(call DefineBoostLibrary,filesystem,system,))
+$(eval $(call DefineBoostLibrary,graph,regex,))
+$(eval $(call DefineBoostLibrary,iostreams,,+PACKAGE_boost-iostreams:zlib))
+$(eval $(call DefineBoostLibrary,locale,system,$(ICONV_DEPENDS) +@BUILD_NLS))
+$(eval $(call DefineBoostLibrary,log,system chrono date_time thread filesystem regex,))
+$(eval $(call DefineBoostLibrary,math,,))
+#$(eval $(call DefineBoostLibrary,mpi,,)) # OpenMPI does no exist in OpenWRT at this time.
+$(eval $(call DefineBoostLibrary,program_options,,))
+$(eval $(call DefineBoostLibrary,python,,+PACKAGE_boost-python:python))
+$(eval $(call DefineBoostLibrary,python3,,+PACKAGE_boost-python3:python3))
+$(eval $(call DefineBoostLibrary,random,system,))
+$(eval $(call DefineBoostLibrary,regex,,))
+$(eval $(call DefineBoostLibrary,serialization,,))
+$(eval $(call DefineBoostLibrary,signals,,))
+$(eval $(call DefineBoostLibrary,system,,))
+$(eval $(call DefineBoostLibrary,thread,system chrono atomic,))
+$(eval $(call DefineBoostLibrary,timer,chrono))
+$(eval $(call DefineBoostLibrary,wave,date_time thread filesystem,))
+
+
+define Host/Compile
+	# b2 does not provide a configure-script nor a Makefile
+	( cd $(HOST_BUILD_DIR)/tools/build/src/engine ; ./build.sh gcc )
+endef
+
+CONFIGURE_PREFIX:=$(PKG_INSTALL_DIR)
+TARGET_LDFLAGS += -pthread -lrt
+
+TARGET_CFLAGS += \
+	$(if $(CONFIG_PACKAGE_boost-python), -I$(STAGING_DIR)/usr/include/python2.7/) \
+	$(if $(CONFIG_PACKAGE_boost-python3), -I$(STAGING_DIR)/usr/include/python3.5/) \
+	$(if $(CONFIG_SOFT_FLOAT),-DBOOST_NO_FENV_H) -fPIC
+
+ifneq ($(findstring mips,$(ARCH)),)
+    BOOST_ABI = o32
+    ifneq ($(findstring 64,$(ARCH)),)
+        BOOST_ABI = o64
+    endif
+else ifneq ($(findstring arm,$(ARCH)),)
+    BOOST_ABI = aapcs
+else ifeq ($(ARCH),aarch64)
+    BOOST_ABI = aapcs
+else
+    BOOST_ABI = sysv
+endif
+
+comma := ,
+
+define Build/Compile
+	$(info Selected Boost API $(BOOST_ABI) for architecture $(ARCH) and cpu $(CPU_TYPE) $(CPU_SUBTYPE))
+	( cd $(PKG_BUILD_DIR) ; \
+		echo "using gcc : $(ARCH) : $(GNU_TARGET_NAME)-gcc : <compileflags>\"$(TARGET_CFLAGS)\" <cxxflags>\"$(TARGET_CXXFLAGS)\" <linkflags>\"$(TARGET_LDFLAGS)\" ;" > tools/build/src/user-config.jam ; \
+		$(if $(CONFIG_PACKAGE_boost-python3), \
+			echo "using python : 3.5 : $(STAGING_DIR_ROOT)/usr/bin/python3 : $(STAGING_DIR)/usr/include/python3.5/ ;" >> \
+				tools/build/src/user-config.jam; \
+		) \
+		$(if $(CONFIG_PACKAGE_boost-python), \
+			echo "using python : 2.7 : $(STAGING_DIR_ROOT)/usr/bin/python :	$(STAGING_DIR)/usr/include/python2.7/ ;" >> \
+				tools/build/src/user-config.jam; \
+		) \
+		b2 \
+			$(CONFIGURE_ARGS) \
+			--ignore-site-config \
+			--toolset=gcc-$(ARCH) abi=$(BOOST_ABI) \
+			--disable-long-double \
+			$(if $(CONFIG_boost-variant-release), variant=release,) \
+			$(if $(CONFIG_boost-variant-debug), variant=debug,) \
+			$(if $(CONFIG_boost-variant-profile), variant=profile,) \
+			$(if $(CONFIG_boost-use-name-tags),--layout=tagged,--layout=system) \
+			$(if $(CONFIG_boost-build-type-complete),--build-type=complete,--build-type=minimal) \
+			$(if $(CONFIG_boost-shared-libs),link=shared,) \
+			$(if $(CONFIG_boost-static-libs),link=static,) \
+			$(if $(CONFIG_boost-static-and-shared-libs),link=static$(comma)shared,) \
+			$(if $(CONFIG_boost-runtime-shared),runtime-link=shared,) \
+			$(if $(CONFIG_boost-runtime-static),runtime-link=static,) \
+			$(if $(CONFIG_boost-runtime-static-and-shared),runtime-link=shared$(comma)static,) \
+			$(if $(CONFIG_boost-single-thread),threading=single,) \
+			threading=multi \
+			--without-mpi \
+			$(if $(CONFIG_boost-coroutine2),,--without-coroutine2) \
+			$(if $(CONFIG_boost-graph-parallel),,--without-graph_parallel) \
+			$(if $(CONFIG_PACKAGE_boost-test),,--without-test) \
+			$(foreach lib,$(BOOST_LIBS), \
+				$(if $(findstring python,$(lib)), \
+				  $(if $(or $(CONFIG_PACKAGE_boost-python),$(CONFIG_PACKAGE_boost-python3)),,--without-python), \
+				  $(if $(CONFIG_PACKAGE_boost-$(lib)),,--without-$(lib))) \
+			) \
+			$(if $(CONFIG_PACKAGE_boost-locale),boost.locale.iconv=on -sICONV_PATH=$(ICONV_PREFIX) boost.locale.posix=$(if $(USE_MUSL),on,off), \
+				boost.locale.iconv=off) \
+			\
+			$(if $(CONFIG_PACKAGE_boost-iostreams),-sNO_BZIP2=1 -sZLIB_INCLUDE=$(STAGING_DIR)/usr/include \
+				-sZLIB_LIBPATH=$(STAGING_DIR)/usr/lib) \
+			install \
+	)
+endef
+
+define Build/InstallDev
+	$(INSTALL_DIR) \
+		$(1)/usr/include/boost/
+
+	$(CP) \
+		$(PKG_INSTALL_DIR)/include/boost/* \
+		$(1)/usr/include/boost/ \
+		# copies _all_ header files - independent of <--with-library>-argument above
+
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(CP) -v $(PKG_INSTALL_DIR)/lib/*.a $(1)/usr/lib/ # copies all compiled archive files
+	$(FIND) $(PKG_INSTALL_DIR)/lib/ -name '*.so*' -exec $(CP) {} $(1)/usr/lib/ \; # copies all the shared objects files
+endef
+
+define Host/Install
+	$(INSTALL_DIR) \
+		$(STAGING_DIR_HOST)/bin
+
+	$(CP) \
+		$(HOST_BUILD_DIR)/tools/build/src/engine/bin.*/b2 \
+		$(STAGING_DIR_HOST)/bin/
+endef
+
+define Package/boost/Default/install
+	$(INSTALL_DIR) \
+		$(1)/usr/lib
+
+	$(FIND) \
+		$(PKG_INSTALL_DIR)/lib/ -name 'libboost_$(2)*.so*' -exec $(CP) {} $(1)/usr/lib/ \;
+endef
+
+define Package/boost-test/install	
+		$(INSTALL_DIR) \
+			$(1)/usr/lib
+
+		$(FIND) \
+			$(PKG_INSTALL_DIR)/lib/ -name 'libboost_unit_test_framework*.so*' -exec $(CP) {} $(1)/usr/lib/ \;
+		
+		$(FIND) \
+			$(PKG_INSTALL_DIR)/lib/ -name 'libboost_prg_exec_monitor*.so*' -exec $(CP) {} $(1)/usr/lib/ \;	
+endef
+
+define BuildBoostLibrary
+  define Package/boost-$(1)/install
+	$(call Package/boost/Default/install,$$(1),$(1))
+  endef
+
+  $$(eval $$(call BuildPackage,boost-$(1)))
+endef
+
+$(eval $(call HostBuild))
+
+$(foreach lib,$(BOOST_LIBS),$(eval $(call BuildBoostLibrary,$(lib))))
+$(eval $(call BuildPackage,boost-test))
+$(eval $(call BuildPackage,boost-libs))
+$(eval $(call BuildPackage,boost))
