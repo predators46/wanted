@@ -1,10 +1,11 @@
+/* -*- mode: c; c-basic-offset: 2 -*- */
 /* 
- * Copyright (C) 2007-2011 Coova Technologies, LLC. <support@coova.com>
+ * Copyright (C) 2007-2012 David Bird (Coova Technologies) <support@coova.com>
  * Copyright (C) 2003, 2004, 2005 Mondru AB.
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * the Free Software Foundation, either version 2 of the License, or
  * (at your option) any later version.
  * 
  * This program is distributed in the hope that it will be useful,
@@ -27,6 +28,11 @@
 #include "ewt.h"
 #endif
 
+#ifndef __error_t_defined
+typedef int error_t;
+# define __error_t_defined
+#endif
+
 static int optionsdebug = 0; /* TODO: Should be changed to instance */
 
 static int termstate = REDIR_TERM_INIT;    /* When we were terminated */
@@ -34,7 +40,7 @@ static int termstate = REDIR_TERM_INIT;    /* When we were terminated */
 char credits[] =
 "<H1>CoovaChilli(ChilliSpot) " VERSION "</H1>"
 "<p>Copyright 2002-2005 Mondru AB</p>"
-"<p>Copyright 2006-2011 Coova Technologies, LLC</p>"
+"<p>Copyright 2006-2012 David Bird (Coova Technologies)</p>"
 "ChilliSpot is an Open Source captive portal or wireless LAN access point "
 "controller developed by the community at <a href=\"http://www.coova.org\">www.coova.org</a>. "
 "It is licensed under the GNU General Public License (GPL). ";
@@ -605,7 +611,7 @@ static void bstring_buildurl(bstring str, struct redir_conn_t *conn,
   }
 #endif
 
-  if (redirurl) {
+  if (_options.redirurl && redirurl) {
     bcatcstr(str, amp);
     bcatcstr(str, "redirurl=");
     bassigncstr(bt, redirurl);
@@ -954,6 +960,26 @@ void redir_wispr1_reply (struct redir_t *redir, struct redir_conn_t *conn,
   bdestroy(bt);
 }
 
+void write_authentication_msg_header (struct redir_conn_t *conn, bstring b) {
+  if (conn->authdata.type == REDIR_AUTH_EAP) {
+    bcatcstr(b,
+             "<EAPAuthenticationReply>\r\n"
+             "<MessageType>121</MessageType>\r\n"); /* response to authentication notification */
+  } else {
+    bcatcstr(b,
+             "<AuthenticationReply>\r\n"
+             "<MessageType>120</MessageType>\r\n"); /* response to authentication notification */
+  }
+}
+
+void write_authentication_msg_footer(struct redir_conn_t *conn, bstring b) {
+  if (conn->authdata.type == REDIR_AUTH_EAP) {
+    bcatcstr(b, "</EAPAuthenticationReply>\r\n");
+  } else {
+    bcatcstr(b, "</AuthenticationReply>\r\n");
+  }
+}
+
 /* Make a WISPr 2.0 XML reply 
  * Note: This method must be called if Coova advertises the support of both 
  * WISPr 1.0 and WISPr 2.0 in the "NOTYET" phase */
@@ -963,26 +989,6 @@ void redir_wispr2_reply (struct redir_t *redir, struct redir_conn_t *conn,
   bstring bt = bfromcstr("");
   char eap64str [MAX_EAP_LEN*2];
   
-  void write_authentication_msg_header () {
-    if (conn->authdata.type == REDIR_AUTH_EAP) {
-      bcatcstr(b, 
-	       "<EAPAuthenticationReply>\r\n"
-	       "<MessageType>121</MessageType>\r\n"); /* response to authentication notification */
-    } else {
-      bcatcstr(b, 
-	       "<AuthenticationReply>\r\n" 
-	       "<MessageType>120</MessageType>\r\n"); /* response to authentication notification */
-    }
-  }
-  
-  void write_authentication_msg_footer() {
-    if (conn->authdata.type == REDIR_AUTH_EAP) {
-      bcatcstr(b, "</EAPAuthenticationReply>\r\n");
-    } else {
-      bcatcstr(b, "</AuthenticationReply>\r\n");
-    }
-  }
-
   log_dbg("%s", __FUNCTION__);
   
   bcatcstr(b,
@@ -1055,7 +1061,7 @@ void redir_wispr2_reply (struct redir_t *redir, struct redir_conn_t *conn,
     break;
     
   case REDIR_FAILED_REJECT:
-    write_authentication_msg_header();     
+    write_authentication_msg_header(conn,b);
     
     bcatcstr(b, 
 	     "<ResponseCode>100</ResponseCode>\r\n"); /* login failed (Access REJECT) */
@@ -1068,33 +1074,33 @@ void redir_wispr2_reply (struct redir_t *redir, struct redir_conn_t *conn,
       bcatcstr(b, "<ReplyMessage>Invalid Password</ReplyMessage>\r\n");
     }
         
-    write_authentication_msg_footer();
+    write_authentication_msg_footer(conn,b);
     break;
     
   case REDIR_FAILED_NOROUTE:
-    write_authentication_msg_header();     
+    write_authentication_msg_header(conn,b);
     
     bcatcstr(b, 
 	     "<ResponseCode>105</ResponseCode>\r\n"); /* RADIUS serveur error/timeout */
     
     bcatcstr(b, "<ReplyMessage>no route for realm</ReplyMessage>\r\n");
     
-    write_authentication_msg_footer();
+    write_authentication_msg_footer(conn,b);
     break;
     
   case REDIR_FAILED_MTU:
-    write_authentication_msg_header();     
+    write_authentication_msg_header(conn,b);
     
     bcatcstr(b, 
 	     "<ResponseCode>253</ResponseCode>\r\n"); /* MTU is too big */
     
     bcatcstr(b, "<ReplyMessage>AAA MTU is too big</ReplyMessage>\r\n");
     
-    write_authentication_msg_footer();
+    write_authentication_msg_footer(conn,b);
     break;
     
   case REDIR_FAILED_TIMEOUT:
-    write_authentication_msg_header();     
+    write_authentication_msg_header(conn,b);
     
     bcatcstr(b, 
 	     "<ResponseCode>102</ResponseCode>\r\n"); /* RADIUS serveur timeout */
@@ -1106,11 +1112,11 @@ void redir_wispr2_reply (struct redir_t *redir, struct redir_conn_t *conn,
       bcatcstr(b, "<ReplyMessage>Radius timeout</ReplyMessage>\r\n");
     }
     
-    write_authentication_msg_footer();
+    write_authentication_msg_footer(conn,b);
     break;
     
   case REDIR_ERROR_PROTOCOL:
-    write_authentication_msg_header();     
+    write_authentication_msg_header(conn,b);
     
     bcatcstr(b, 
 	     "<ResponseCode>254</ResponseCode>\r\n"); /* WISPr 2.0 protocol error */
@@ -1122,11 +1128,11 @@ void redir_wispr2_reply (struct redir_t *redir, struct redir_conn_t *conn,
       bcatcstr(b, "<ReplyMessage>WISPr 2.0 protocol error</ReplyMessage>\r\n");
     }
     
-    write_authentication_msg_footer();
+    write_authentication_msg_footer(conn,b);
     break;
     
   case REDIR_FAILED_OTHER:
-    write_authentication_msg_header();     
+    write_authentication_msg_header(conn,b);
     
     bcatcstr(b, 
 	     "<ResponseCode>255</ResponseCode>\r\n"); /* RADIUS serveur error */
@@ -1138,7 +1144,7 @@ void redir_wispr2_reply (struct redir_t *redir, struct redir_conn_t *conn,
       bcatcstr(b, "<ReplyMessage>Radius error</ReplyMessage>\r\n");
     }
     
-    write_authentication_msg_footer();
+    write_authentication_msg_footer(conn,b);
     break;
     
   case REDIR_CHALLENGE:
@@ -1166,7 +1172,7 @@ void redir_wispr2_reply (struct redir_t *redir, struct redir_conn_t *conn,
     break;
     
   case REDIR_SUCCESS:
-    write_authentication_msg_header();     
+    write_authentication_msg_header(conn,b);
     
     bcatcstr(b, 
 	     "<ResponseCode>50</ResponseCode>\r\n"); 
@@ -1203,7 +1209,7 @@ void redir_wispr2_reply (struct redir_t *redir, struct redir_conn_t *conn,
       bconcat(b, bt);
     }
     
-    write_authentication_msg_footer();
+    write_authentication_msg_footer(conn,b);
     break;
     
   case REDIR_LOGOFF:
@@ -1389,7 +1395,7 @@ static int redir_json_reply(struct redir_t *redir, int res, struct redir_conn_t 
   bcatcstr(s, "\r\n\r\n");
   bconcat(s, json);
 
-#if(_debug_)    
+#if(_debug_ > 1)    
   log_dbg("sending json: %s\n", json->data);
 #endif
 
@@ -1552,10 +1558,9 @@ int redir_reply(struct redir_t *redir, struct redir_socket_t *sock,
     if (url) {
 
       bconcat(buffer, url);
-
-      /*} else if (redirurl && *redirurl) {
+      
+    } else if (!_options.redirurl && redirurl && *redirurl) {
 	bcatcstr(buffer, redirurl);
-      */
     } else {
       bt = bfromcstralloc(1024,"");
       redir_buildurl(conn, bt, redir, resp, timeleft, hexchal, 
@@ -1705,10 +1710,17 @@ int redir_listen(struct redir_t *redir) {
 #ifdef SO_REUSEPORT
     optval = 1;
     if (setsockopt(redir->fd[n], SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval))) {
-      log_err(errno, "setsockopt(SO_REUSEPORT)");
-      safe_close(redir->fd[n]);
-      redir->fd[n]=0;
-      return -1;
+      error_t last_errno = errno;
+      log_err(last_errno, "setsockopt(SO_REUSEPORT)");
+      if (last_errno != ENOPROTOOPT) {
+	log_dbg ("setsockopt(SO_REUSEPORT) failed hard, aborting.");
+	safe_close(redir->fd[n]);
+	redir->fd[n]=0;
+	return -1;
+      } else {
+	log_dbg ("setsockopt(SO_REUSEPORT) failed due to proto not available "
+		 "(probably compiled with newer header files), continueing anyways...");
+      }
     }
 #endif
     
@@ -1873,7 +1885,7 @@ int redir_getparam(struct redir_t *redir, char *src, char *param, bstring dst) {
 
   safe_snprintf(sstr, sizeof(sstr), "&%s=", param);
 
-#if(_debug_)    
+#if(_debug_ > 1)    
   log_dbg("getparam(%s)", sstr);
 #endif
 
@@ -1963,10 +1975,12 @@ static int redir_getreq(struct redir_t *redir, struct redir_socket_t *sock,
 	log_err(errno,"select(%d)",fd);
 	return -1;
 
+	/*
       case 0:
 	log_dbg("HTTP request timeout!");
 	done = 1;
 	break;
+	*/
 
       default:
 	break;
@@ -2006,16 +2020,18 @@ static int redir_getreq(struct redir_t *redir, struct redir_socket_t *sock,
       if (recvlen < 0) {
 	recvlen = 0;
 	if (errno == EWOULDBLOCK && !forked) {
-#if(_debug_)
+#if(_debug_ > 1)
 	  log_dbg("Continue... (would block)");
 #endif
 	  wblock = 1;
 	} else {
-	  log_err(errno, "%s_read(%d) failed!", 
+#if(_debug_ > 1)
+	  log_dbg("%s_read(%d) failed!",
 #ifdef HAVE_SSL
 		  sock->sslcon ? "SSL" : 
 #endif
 		  "redir", fd);
+#endif
 	  return -1;
 	}
       }
@@ -2098,9 +2114,7 @@ static int redir_getreq(struct redir_t *redir, struct redir_socket_t *sock,
 
 	safe_strncpy(path, p1, sizeof(httpreq->path));
 
-#if(_debug_)
 	log_dbg("The path: %s", path); 
-#endif
 
 	/* TODO: Should also check the Host: to make sure we are talking directly to uamlisten */
 
@@ -2139,6 +2153,10 @@ static int redir_getreq(struct redir_t *redir, struct redir_socket_t *sock,
 	else if (!strncmp(path, "ewt/json", 8))
 	  conn->type = REDIR_EWTAPI;
 #endif
+#ifdef ENABLE_WPAD
+	else if (!strncmp(path, "wpad.dat", 8))
+	  conn->type = REDIR_WPAD;
+#endif
 
 	if (qs_delim == '?') {
 	  p1 = p2 + 1;
@@ -2149,14 +2167,14 @@ static int redir_getreq(struct redir_t *redir, struct redir_socket_t *sock,
 
 	    safe_strncpy(httpreq->qs, p1, sizeof(httpreq->qs));
 
-#if(_debug_)
+#if(_debug_ > 1)
 	    log_dbg("Query string: %s", httpreq->qs); 
 #endif
 	  }
 	}
       } else if (linelen == 0) { 
 	/* end of headers */
-#if(_debug_)    
+#if(_debug_ > 1)    
 	log_dbg("end of http-request");
 #endif
 	done = 1;
@@ -2190,9 +2208,9 @@ static int redir_getreq(struct redir_t *redir, struct redir_socket_t *sock,
 	  while (*p && isspace((int) *p)) p++;
 	  safe_strncpy(conn->s_state.redir.useragent, 
 		       p, sizeof(conn->s_state.redir.useragent));
-#if(_debug_ > 1)
-#endif
+#if(_debug_)
 	  log_dbg("User-Agent: %s",conn->s_state.redir.useragent);
+#endif
 	}
 #endif
 #ifdef ENABLE_ACCEPTLANGUAGE
@@ -2202,8 +2220,8 @@ static int redir_getreq(struct redir_t *redir, struct redir_socket_t *sock,
 	  safe_strncpy(conn->s_state.redir.acceptlanguage, 
 		       p, sizeof(conn->s_state.redir.acceptlanguage));
 #if(_debug_ > 1)
-#endif
 	  log_dbg("Accept-Language: %s",conn->s_state.redir.acceptlanguage);
+#endif
 	}
 #endif
 	else if (!strncasecmp(buffer,"Cookie:",7)) {
@@ -2263,13 +2281,16 @@ static int redir_getreq(struct redir_t *redir, struct redir_socket_t *sock,
 	return -1;
       }
 
-      bstrtocstr(bt, conn->s_state.redir.username, sizeof(conn->s_state.redir.username));
+      bstrtocstr(bt, conn->s_state.redir.username, 
+		 sizeof(conn->s_state.redir.username));
+
       log_dbg("-->> Setting username=[%s]",conn->s_state.redir.username);
       
       if (!redir_getparam(redir, httpreq->qs, "userurl", bt)) {
 	bstring bt2 = bfromcstr("");
 	redir_urldecode(bt, bt2);
-	bstrtocstr(bt2, conn->s_state.redir.userurl, sizeof(conn->s_state.redir.userurl));
+	bstrtocstr(bt2, conn->s_state.redir.userurl, 
+		   sizeof(conn->s_state.redir.userurl));
 	log_dbg("-->> Setting userurl=[%s]",conn->s_state.redir.userurl);
 	bdestroy(bt2);
       }
@@ -2381,7 +2402,8 @@ static int redir_getreq(struct redir_t *redir, struct redir_socket_t *sock,
       if (!redir_getparam(redir, httpreq->qs, "userurl", bt)) {
 	bstring bt2 = bfromcstr("");
 	redir_urldecode(bt, bt2);
-	bstrtocstr(bt2, conn->s_state.redir.userurl, sizeof(conn->s_state.redir.userurl));
+	bstrtocstr(bt2, conn->s_state.redir.userurl, 
+		   sizeof(conn->s_state.redir.userurl));
 	log_dbg("-->> Setting userurl=[%s]",conn->s_state.redir.userurl);
 	bdestroy(bt2);
       }
@@ -2400,6 +2422,12 @@ static int redir_getreq(struct redir_t *redir, struct redir_socket_t *sock,
       bdestroy(bt);
     } 
     break;
+
+#ifdef ENABLE_WPAD
+  case REDIR_WPAD:
+    log_dbg("WPAD %s:%d", __FUNCTION__, __LINE__);
+    break;
+#endif
 
   default:
     {
@@ -2651,7 +2679,7 @@ static int redir_radius(struct redir_t *redir, struct in_addr *addr,
 		 strlen(conn->s_state.redir.username));
 
   if (redir->secret && *redir->secret) {
-    log_dbg("SECRET: [%s]",redir->secret);
+    //log_dbg("SECRET: [%s]",redir->secret);
     /* Get MD5 hash on challenge and uamsecret */
     MD5Init(&context);
     MD5Update(&context, conn->s_state.redir.uamchal, REDIR_MD5LEN);
@@ -3041,7 +3069,7 @@ int redir_accept(struct redir_t *redir, int idx) {
   setenv("TCPREMOTEPORT",buffer,1);
   setenv("REMOTE_PORT",buffer,1);
 
-  if (idx == 1 && _options.uamui) {
+  if (idx == 1 && _options.uamui && *_options.uamui) {
 
     char *binqqargs[2] = { _options.uamui, 0 } ;
 
@@ -3073,7 +3101,7 @@ static int _redir_close(int infd, int outfd) {
 }
 
 static int _redir_close_exit(int infd, int outfd) {
-#if(_debug_)    
+#if(_debug_ > 1)    
   log_dbg("close_exit");
 #endif
   _redir_close(infd,outfd);
@@ -3161,6 +3189,25 @@ pid_t redir_fork(int in, int out) {
   return pid;
 }
 
+int redir_main_exit(struct redir_socket_t *socket, int forked, redir_request *rreq) {
+    /* if (httpreq->data_in) bdestroy(httpreq->data_in); */
+    /* if (!forked) return 0; XXXX*/
+#ifdef HAVE_SSL
+    if (socket->sslcon) {
+#if(_debug_ > 1)
+      log_dbg("Shutting down SSL");
+#endif
+      openssl_shutdown(socket->sslcon, 2);
+      openssl_free(socket->sslcon);
+      socket->sslcon = 0;
+      if (rreq)
+        rreq->sslcon = 0;
+    }
+#endif
+    if (forked) _redir_close_exit(socket->fd[0], socket->fd[1]);
+    return _redir_close(socket->fd[0], socket->fd[1]);
+}
+
 int redir_main(struct redir_t *redir, 
 	       int infd, int outfd, 
 	       struct sockaddr_in *address, 
@@ -3194,25 +3241,6 @@ int redir_main(struct redir_t *redir,
   int forked = (rreq == 0);
   int err;
 
-  int redir_main_exit() {
-    /* if (httpreq->data_in) bdestroy(httpreq->data_in); */
-    /* if (!forked) return 0; XXXX*/
-#ifdef HAVE_SSL
-    if (socket.sslcon) {
-#if(_debug_)
-      log_dbg("Shutting down SSL");
-#endif
-      openssl_shutdown(socket.sslcon, 2);
-      openssl_free(socket.sslcon);
-      socket.sslcon = 0;
-      if (rreq) 
-	rreq->sslcon = 0;
-    }
-#endif
-    if (forked) _redir_close_exit(socket.fd[0], socket.fd[1]);
-    return _redir_close(socket.fd[0], socket.fd[1]);
-  }
-
 
   memset(&httpreq,0,sizeof(httpreq));
   httpreq.allow_post = isui || _options.uamallowpost;
@@ -3239,7 +3267,7 @@ int redir_main(struct redir_t *redir,
   memcpy(&msg.mdata.redir, &conn.s_state.redir, sizeof(msg.mdata.redir)); \
   if (redir_send_msg(redir, &msg) < 0) { \
     log_err(errno, "write() failed! msgfd=%d type=%d len=%d", redir->msgfd, msg.mtype, sizeof(msg.mdata)); \
-    return redir_main_exit(); \
+    return redir_main_exit(&socket, forked, rreq); \
   } 
 #else
 #define redir_msg_send(msgopt) \
@@ -3250,7 +3278,7 @@ int redir_main(struct redir_t *redir,
   memcpy(&msg.mdata.redir, &conn.s_state.redir, sizeof(msg.mdata.redir)); \
   if (msgsnd(redir->msgid, (void *)&msg, sizeof(msg.mdata), 0) < 0) { \
     log_err(errno, "msgsnd() failed! msgid=%d type=%d len=%d", redir->msgid, msg.mtype, sizeof(msg.mdata)); \
-    return redir_main_exit(); \
+    return redir_main_exit(&socket, forked, rreq); \
   } 
 #endif
 
@@ -3270,11 +3298,11 @@ int redir_main(struct redir_t *redir,
   /*
   if (ndelay_on(socket.fd[0])) {
     log_err(errno, "fcntl() failed");
-    return redir_main_exit();
+    return redir_main_exit(&socket, forked, rreq);
   }
   */
 
-#if(_debug_)
+#if(_debug_ > 1)
   log_dbg("Calling redir_getstate()");
 #endif
 
@@ -3286,14 +3314,14 @@ int redir_main(struct redir_t *redir,
 
   if (!redir->cb_getstate) { 
     log_err(0, "No cb_getstate() defined!"); 
-    return redir_main_exit();
+    return redir_main_exit(&socket, forked, rreq);
   }
 
   /* get_state returns 0 for unauth'ed and 1 for auth'ed */
   state = redir->cb_getstate(redir, address, baddress, &conn);
   
   if (state == -1) {
-#if(_debug_)
+#if(_debug_ > 1)
     log_dbg("getstate() session not found");
 #endif
     
@@ -3303,14 +3331,14 @@ int redir_main(struct redir_t *redir,
        *  Allow external (WAN) access to EWT API if available,
        *  always under SSL.
        */
-#if(_debug_)
+#if(_debug_ > 1)
       log_dbg("redir connection is SSL");
 #endif
       conn.flags |= USING_SSL;
     } else 
 #endif
     {
-      return redir_main_exit();
+      return redir_main_exit(&socket, forked, rreq);
     }
   }
   
@@ -3319,7 +3347,7 @@ int redir_main(struct redir_t *redir,
   /*
    *  Parse the request, updating the status
    */
-#if(_debug_)
+#if(_debug_ > 1)
   log_dbg("Receiving HTTP%s Request", (conn.flags & USING_SSL) ? "S" : "");
 #endif
 
@@ -3340,17 +3368,17 @@ int redir_main(struct redir_t *redir,
       socket.sslcon = rreq->sslcon;
     }
 
-#if(_debug_)
+#if(_debug_ > 1)
     log_dbg("SSL loop %d", loop);
 #endif
 
     while (!done) {
       switch(openssl_check_accept(socket.sslcon, &conn)) {
       case -1:
-#if(_debug_)
+#if(_debug_ > 1)
 	log_dbg("redir error, redir_main_exit");
 #endif
-	return redir_main_exit();
+	return redir_main_exit(&socket, forked, rreq);
       case 1:
 	if (!loop) {
 	  log_dbg("Continue... SSL pending");
@@ -3363,7 +3391,7 @@ int redir_main(struct redir_t *redir,
       if (!loop) done = 1;
     }
 
-#if(_debug_)
+#if(_debug_ > 1)
     log_dbg("HTTPS Accepted");
 #endif
   }
@@ -3375,21 +3403,23 @@ int redir_main(struct redir_t *redir,
   case 0: 
     break;
   case 1: 
-#if(_debug_)
+#if(_debug_ > 1)
     log_dbg("Continue...");
 #endif
     return 1;
   default:
     log_dbg("Error calling get_req. Terminating %d", err);
-    return redir_main_exit();
+    return redir_main_exit(&socket, forked, rreq);
   }
 
-
-#if(_debug_)
+#if(_debug_ > 1)
   log_dbg("Processing HTTP%s Request", (conn.flags & USING_SSL) ? "S" : "");
 #endif
   
   switch (conn.type) {
+#ifdef ENABLE_WPAD
+  case REDIR_WPAD:
+#endif
 #ifdef ENABLE_EWTAPI
   case REDIR_EWTAPI:
 #endif
@@ -3398,12 +3428,18 @@ int redir_main(struct redir_t *redir,
 #ifdef ENABLE_EWTAPI
       char isEWT = conn.type == REDIR_EWTAPI;
 #endif
+#ifdef ENABLE_WPAD
+      char isWPAD = conn.type == REDIR_WPAD;
+#endif
       pid_t forkpid;
       int fd = -1;
       
       if (_options.wwwdir && ((conn.wwwfile && *conn.wwwfile)
 #ifdef ENABLE_EWTAPI
 			      || isEWT
+#endif
+#ifdef ENABLE_WPAD
+			      || isWPAD
 #endif
 			      )) {
 	char *ctype = "text/plain";
@@ -3416,8 +3452,14 @@ int redir_main(struct redir_t *redir,
 	if (isEWT) {
 	  if (!(conn.s_params.flags & ADMIN_LOGIN)) {
 	    log_warn(0, "Permission denied to EWT API");
-	    return redir_main_exit();
+	    return redir_main_exit(&socket, forked, rreq);
 	  }
+	} else 
+#endif
+#ifdef ENABLE_WPAD
+	if (isWPAD) {
+	    filename = "wpad.dat";
+	    namelen = strlen(filename);
 	} else 
 #endif
 	{ 
@@ -3436,10 +3478,10 @@ int redir_main(struct redir_t *redir,
 	    if (*p >= '0' && *p <= '9') continue;
 	    /* invalid file name! */
 	    log_err(0, "invalid www request [%s]!", filename);
-	    return redir_main_exit();
+	    return redir_main_exit(&socket, forked, rreq);
 	  }
 	}
-	
+
 	/* serve the local content */
 	
 #ifdef ENABLE_EWTAPI
@@ -3453,15 +3495,24 @@ int redir_main(struct redir_t *redir,
 	else if (!strcmp(filename + (namelen - 4), ".jpg"))  ctype = "image/jpeg";
 	else if (!strcmp(filename + (namelen - 4), ".mp4"))  ctype = "video/mp4";
 	else if (!strcmp(filename + (namelen - 4), ".ogv"))  ctype = "video/ogg";
-	else if (!strcmp(filename + (namelen - 4), ".dat"))  ctype = "application/x-ns-proxy-autoconfig";
 	else if (!strcmp(filename + (namelen - 4), ".png"))  ctype = "image/png";
 	else if (!strcmp(filename + (namelen - 4), ".swf"))  ctype = "application/x-shockwave-flash";
 	else if (!strcmp(filename + (namelen - 4), ".chi")){ ctype = "text/html"; parse = 1; }
 	else if (!strcmp(filename + (namelen - 4), ".cjs")){ ctype = "text/javascript"; parse = 1; }
+	else if (!strcmp(filename + (namelen - 4), ".dat")){ ctype = "application/x-ns-proxy-autoconfig";
+#ifdef ENABLE_WPAD
+	  if (isWPAD && _options.wpadpacfile) {
+	    struct stat statbuf;
+	    if (stat(_options.wpadpacfile, &statbuf) == 0)
+	      if (statbuf.st_mode & (S_IXUSR|S_IXGRP|S_IXOTH))
+		parse = 1;
+	  }
+#endif
+	}
 	else { 
 	  /* we do not serve it! */
 	  log_err(0, "invalid file extension! [%s]", filename);
-	  return redir_main_exit();
+	  return redir_main_exit(&socket, forked, rreq);
 	}
 	
 	if (!forked) {
@@ -3471,7 +3522,7 @@ int redir_main(struct redir_t *redir,
 	   */
 	  forkpid = redir_fork(infd, outfd);
 	  if (forkpid) { /* parent or error */
-	    return redir_main_exit();
+	    return redir_main_exit(&socket, forked, rreq);
 	  }
 	}
 	
@@ -3479,7 +3530,7 @@ int redir_main(struct redir_t *redir,
 	  
 	  if (!_options.wwwbin) {
 	    log_err(0, "the 'wwwbin' setting must be configured for CGI use");
-	    return redir_main_exit();
+	    return redir_main_exit(&socket, forked, rreq);
 	  }
 
 	  if (ndelay_off(socket.fd[0])) {
@@ -3498,14 +3549,14 @@ int redir_main(struct redir_t *redir,
 	    
 	    if (pipe(ptoc) == -1 || pipe(ctop) == -1) {
 	      log_err(errno, "pipe() failed");
-	      return redir_main_exit();
+	      return redir_main_exit(&socket, forked, rreq);
 	    }
 	    
 	    forkpid = redir_fork(ptoc[0], ctop[1]);
 	    
 	    if (forkpid < 0) {
 	      log_err(errno, "fork() failed");
-	      return redir_main_exit();
+	      return redir_main_exit(&socket, forked, rreq);
 	    }
 	    
 	    forked = 1;
@@ -3529,7 +3580,7 @@ int redir_main(struct redir_t *redir,
 		if ((buflen = openssl_read(socket.sslcon, buffer, rd, 0)) > 0) {
 		  if (safe_write(ptoc[1], buffer, (size_t) buflen) < 0) {
 		    log_err(errno, "error");
-		    return redir_main_exit();
+		    return redir_main_exit(&socket, forked, rreq);
 		  }
 		  clen -= buflen;
 		}
@@ -3565,7 +3616,7 @@ int redir_main(struct redir_t *redir,
 	      safe_close(ptoc[1]);
 	      safe_close(ctop[0]);
 	      
-	      return redir_main_exit();
+	      return redir_main_exit(&socket, forked, rreq);
 	      
 	    } else {
 	      /* child */
@@ -3625,6 +3676,15 @@ int redir_main(struct redir_t *redir,
 	    }
 	    break;
 #endif
+#ifdef ENABLE_WPAD
+	  case REDIR_WPAD:
+	    if (isWPAD && _options.wpadpacfile) {
+	      char *binqqargs[3] = { _options.wpadpacfile, 0 } ;
+	      log_dbg("Running: %s", _options.wpadpacfile);
+	      execv(*binqqargs, binqqargs);
+	      break;
+	    }
+#endif
 	  case REDIR_WWW: 
 	    /* XXX: Todo: look for malicious content! */
 	    {
@@ -3638,7 +3698,7 @@ int redir_main(struct redir_t *redir,
 	    break;
 	  }
 	  
-	  return redir_main_exit();
+	  return redir_main_exit(&socket, forked, rreq);
 	}
 	
 	if ( (_options.uid == 0 && !chroot(_options.wwwdir) && !chdir("/")) ||
@@ -3686,14 +3746,13 @@ int redir_main(struct redir_t *redir,
       }
       else log_err(0, "Required: 'wwwdir' (in chilli.conf) and 'file' query-string param"); 
       
-      return redir_main_exit();
+      return redir_main_exit(&socket, forked, rreq);
     }
   }
 
-
   termstate = REDIR_TERM_PROCESS;
 
-#if(_debug_)
+#if(_debug_ > 1)
   log_dbg("Processing received request");
 #endif
 
@@ -3722,7 +3781,7 @@ int redir_main(struct redir_t *redir,
 		    (char *)conn.s_params.url, conn.hismac, 
 		    &conn.hisip, httpreq.qs);
 	
-	return redir_main_exit();
+	return redir_main_exit(&socket, forked, rreq);
       }
     }
 
@@ -3740,7 +3799,7 @@ int redir_main(struct redir_t *redir,
 		  0, hexchal, NULL, NULL, NULL, 
 		  0, conn.hismac, &conn.hisip, httpreq.qs);
 
-      return redir_main_exit();
+      return redir_main_exit(&socket, forked, rreq);
     }
 
     if (is_local_user(redir, &conn)) { 
@@ -3761,7 +3820,7 @@ int redir_main(struct redir_t *redir,
 	 */
 	pid_t forkpid = redir_fork(infd, outfd);
 	if (forkpid) { /* parent or error */
-	  return redir_main_exit();
+	  return redir_main_exit(&socket, forked, rreq);
 	}
       }
 
@@ -3777,7 +3836,7 @@ int redir_main(struct redir_t *redir,
 	    flags |= modresult;
 	    switch(chilli_mod_state(modresult)) {
 	    case CHILLI_MOD_ERROR:
-	      return redir_main_exit();
+	      return redir_main_exit(&socket, forked, rreq);
 	    default: 
 	      break;
 	    }
@@ -3801,7 +3860,7 @@ int redir_main(struct redir_t *redir,
       }
 #endif
       
-#if(_debug_)
+#if(_debug_ > 1)
       log_dbg("Received RADIUS reply");
 #endif
     }
@@ -3815,6 +3874,8 @@ int redir_main(struct redir_t *redir,
       }
 
       msg.mtype = REDIR_LOGIN;
+
+      log_dbg("%s handling Access-Accept",__FUNCTION__);
       
       redir_reply(redir, &socket, &conn, REDIR_SUCCESS, NULL, 
 		  conn.s_params.sessiontimeout, NULL, 
@@ -3829,6 +3890,8 @@ int redir_main(struct redir_t *redir,
     } else { /* Access-Reject */
 
       int hasnexturl = (strlen((char *)conn.s_params.url) > 5);
+
+      log_dbg("%s handling Access-Reject",__FUNCTION__);
 
       if (!hasnexturl) {
 	if (_options.challengetimeout)
@@ -3849,7 +3912,7 @@ int redir_main(struct redir_t *redir,
     }    
 
     log_dbg("-->> Msg userurl=[%s]\n",conn.s_state.redir.userurl);
-    return redir_main_exit();
+    return redir_main_exit(&socket, forked, rreq);
   }
 
   case REDIR_LOGOUT:
@@ -3863,7 +3926,7 @@ int redir_main(struct redir_t *redir,
 		  hexchal, NULL, conn.s_state.redir.userurl, NULL, 
 		  NULL, conn.hismac, &conn.hisip, httpreq.qs);
       
-      return redir_main_exit();
+      return redir_main_exit(&socket, forked, rreq);
     }
     
   case REDIR_MACREAUTH:
@@ -3894,7 +3957,7 @@ int redir_main(struct redir_t *redir,
 		  NULL, 0, hexchal, NULL, conn.s_state.redir.userurl, NULL, 
 		  NULL, conn.hismac, &conn.hisip, httpreq.qs);
     }
-    return redir_main_exit();
+    return redir_main_exit(&socket, forked, rreq);
 
   case REDIR_ABORT:
     if (state == 1) {
@@ -3910,12 +3973,12 @@ int redir_main(struct redir_t *redir,
 		  NULL, 0, hexchal, NULL, conn.s_state.redir.userurl, NULL, 
 		  NULL, conn.hismac, &conn.hisip, httpreq.qs);
     }
-    return redir_main_exit();
+    return redir_main_exit(&socket, forked, rreq);
 
   case REDIR_ABOUT:
     redir_reply(redir, &socket, &conn, REDIR_ABOUT, NULL, 
 		0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, httpreq.qs);
-    return redir_main_exit();
+    return redir_main_exit(&socket, forked, rreq);
 
   case REDIR_STATUS:
     {
@@ -3942,13 +4005,54 @@ int redir_main(struct redir_t *redir,
 		  conn.s_state.redir.userurl, conn.reply, 
 		  0, conn.hismac, &conn.hisip, httpreq.qs);
       
-      return redir_main_exit();
+      return redir_main_exit(&socket, forked, rreq);
     }
 
   case REDIR_MSDOWNLOAD:
     safe_snprintf(buffer, bufsize, "HTTP/1.0 403 Forbidden\r\n\r\n");
     redir_write(&socket, buffer, strlen(buffer));
-    return redir_main_exit();
+    return redir_main_exit(&socket, forked, rreq);
+
+#if(0)
+  {
+    char * hdr = 
+      "HTTP/1.0 200 OK\r\n"
+      "Content-Type: application/x-ns-proxy-autoconfig\r\n"
+      "Content-Length: %d\r\n"
+      "\r\n";
+
+    char * cnt = 
+      "function FindProxyForURL(url, host) {\r\n"
+      "debugPAC =\"PAC Debug Information\\n\";\r\n"
+      "debugPAC +=\"-----------------------------------\\n\";\r\n"
+      "debugPAC +=\"Machine IP: \" + myIpAddress() + \"\\n\";\r\n"
+      "debugPAC +=\"Hostname: \" + host + \"\\n\";\r\n"
+      "if (isResolvable(host)) {resolvableHost = \"True\"} else {resolvableHost = \"False\"};\r\n"
+      "debugPAC +=\"Host Resolvable: \" + resolvableHost + \"\\n\";\r\n"
+      "debugPAC +=\"Hostname IP: \" + dnsResolve(host) + \"\\n\";\r\n"
+      "if (isPlainHostName(host)) {plainHost = \"True\"} else {plainHost = \"False\"};\r\n"
+      "debugPAC +=\"Plain Hostname: \" + plainHost + \"\\n\";\r\n"
+      "debugPAC +=\"Domain Levels: \" + dnsDomainLevels(host) + \"\\n\";\r\n"
+      "debugPAC +=\"URL: \" + url + \"\\n\";\r\n"
+      "if (url.substring(0,5)==\"http:\") {protocol=\"HTTP\";} else\r\n"
+      "if (url.substring(0,6)==\"https:\") {protocol=\"HTTPS\";} else\r\n"
+      "if (url.substring(0,4)==\"ftp:\") {protocol=\"FTP\";}\r\n"
+      "else {protocol=\"Unknown\";}\r\n"
+      "debugPAC +=\"Protocol: \" + protocol + \"\\n\";\r\n"
+      "if (!shExpMatch(url,\"*.(js|xml|ico|gif|png|jpg|jpeg|css|swf)*\")) {alert(debugPAC);}\r\n"
+      "return \"PROXY 1.2.3.4:8080\";\r\n"
+      "}\r\n";
+
+    log_dbg("WPAD %s:%d", __FUNCTION__, __LINE__);
+
+    safe_snprintf(buffer, bufsize, hdr, strlen(cnt));
+    redir_write(&socket, buffer, strlen(buffer));
+
+    safe_snprintf(buffer, bufsize, cnt);
+    redir_write(&socket, buffer, strlen(buffer));
+    return redir_main_exit(&socket, forked, rreq);
+  }
+#endif
 
   }
 
@@ -3959,7 +4063,7 @@ int redir_main(struct redir_t *redir,
   log_dbg("redir_accept: Original request host=%s", httpreq.host);
 
 #ifdef ENABLE_REDIRDNSREQ
-  if (_options.redirdnsreq) {
+  if (_options.redirdnsreq && tun) {
     uint8_t answer[PKT_BUFFER];
     
     /*struct pkt_ethhdr_t *answer_ethh;*/
@@ -3998,9 +4102,9 @@ int redir_main(struct redir_t *redir,
     memset(answer, 0, sizeof(answer));
     
     /*answer_ethh = ethhdr(answer);*/
-    answer_iph = iphdr(answer);
-    answer_udph = udphdr(answer);
-    answer_dns = dnspkt(answer);
+    answer_iph = pkt_iphdr(answer);
+    answer_udph = pkt_udphdr(answer);
+    answer_dns = pkt_dnspkt(answer);
 	
     /* DNS Header */
     answer_dns->id      = 1;
@@ -4074,7 +4178,7 @@ int redir_main(struct redir_t *redir,
     redir_msg_send(REDIR_MSG_OPT_REDIR);
   }
 
-#if(_debug_)
+#if(_debug_ > 1)
   log_dbg("---->>> challenge: %s", hexchal);
 #endif
 
@@ -4126,7 +4230,7 @@ int redir_main(struct redir_t *redir,
 		NULL, conn.hismac, &conn.hisip, httpreq.qs);
   }
 
-  return redir_main_exit();
+  return redir_main_exit(&socket, forked, rreq);
 }
 
 
