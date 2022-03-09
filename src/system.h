@@ -78,6 +78,11 @@
 
 #ifdef HAVE_SYS_SYSINFO_H
 #include <sys/sysinfo.h>
+#else
+#ifdef HAVE_LINUX_SYSINFO_H
+#define _LINUX_KERNEL_H
+#include <linux/sysinfo.h>
+#endif
 #endif
 
 #ifdef HAVE_TIME_H
@@ -163,7 +168,7 @@
 #include <net/if_tun.h>
 #endif
 
-#ifdef HAVE_NET_ETHERNET_H
+#if defined(HAVE_NET_ETHERNET_H) && !defined(__linux__)
 #include <net/ethernet.h>
 #endif
 
