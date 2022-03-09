@@ -17,8 +17,8 @@
  * 
  */
 
-#ifndef _LIMITS_H
-#define _LIMITS_H
+#ifndef _CHILLI_LIMITS_H
+#define _CHILLI_LIMITS_H
 
 /*
  * extracted from various .h files, needs some cleanup.
