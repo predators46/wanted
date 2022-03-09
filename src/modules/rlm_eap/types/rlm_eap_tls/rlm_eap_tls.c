@@ -214,10 +214,8 @@ static void cbtls_remove_session(UNUSED SSL_CTX *ctx, SSL_SESSION *sess)
 	VALUE_PAIR *vp;
 	char buffer[2 * MAX_SESSION_SIZE + 1];
 
-	size = sess->session_id_length;
 	if (size > MAX_SESSION_SIZE) size = MAX_SESSION_SIZE;
 
-	fr_bin2hex(sess->session_id, buffer, size);
 
         DEBUG2("  SSL: Removing session %s from the cache", buffer);
         SSL_SESSION_free(sess);
@@ -230,10 +228,8 @@ static int cbtls_new_session(UNUSED SSL *s, SSL_SESSION *sess)
 	size_t size;
 	char buffer[2 * MAX_SESSION_SIZE + 1];
 
-	size = sess->session_id_length;
 	if (size > MAX_SESSION_SIZE) size = MAX_SESSION_SIZE;
 
-	fr_bin2hex(sess->session_id, buffer, size);
 
 	DEBUG2("  SSL: adding session %s to cache", buffer);
 
@@ -627,9 +623,6 @@ static int cbtls_verify(int ok, X509_STORE_CTX *ctx)
 			pairmake(cert_attr_names[EAPTLS_SUBJECT][lookup], subject, T_OP_SET));
 	}
 
-	X509_NAME_oneline(X509_get_issuer_name(ctx->current_cert), issuer,
-			  sizeof(issuer));
-	issuer[sizeof(issuer) - 1] = '\0';
 	if ((lookup <= 1) && issuer[0] && (strlen(issuer) < MAX_STRING_LEN)) {
 		pairadd(&handler->certs,
 			pairmake(cert_attr_names[EAPTLS_ISSUER][lookup], issuer, T_OP_SET));
@@ -699,25 +692,20 @@ static int cbtls_verify(int ok, X509_STORE_CTX *ctx)
 		return my_ok;
 	}
 
-	switch (ctx->error) {
 
-	case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
+		{
 		radlog(L_ERR, "issuer= %s\n", issuer);
-		break;
-	case X509_V_ERR_CERT_NOT_YET_VALID:
-	case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
+		
 		radlog(L_ERR, "notBefore=");
 #if 0
 		ASN1_TIME_print(bio_err, X509_get_notBefore(ctx->current_cert));
 #endif
-		break;
-	case X509_V_ERR_CERT_HAS_EXPIRED:
-	case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
+		
 		radlog(L_ERR, "notAfter=");
 #if 0
 		ASN1_TIME_print(bio_err, X509_get_notAfter(ctx->current_cert));
 #endif
-		break;
+		
 	}
 
 	/*
@@ -1678,7 +1666,7 @@ static int eaptls_authenticate(void *arg, EAP_HANDLER *handler)
 	default:
 		if (inst->conf->session_cache_enable) {	
 			SSL_CTX_remove_session(inst->ctx,
-					       tls_session->ssl->session);
+					       tls_session->ssl);
 		}
 
 		return 0;
