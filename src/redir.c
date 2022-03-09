@@ -3148,9 +3148,11 @@ pid_t redir_fork(int in, int out) {
     }
 
 #if defined(F_DUPFD)
-    if (fcntl(in,F_GETFL,0) == -1) return -1; safe_close(0);
+    if (fcntl(in,F_GETFL,0) == -1) return -1;
+    safe_close(0);
     if (fcntl(in,F_DUPFD,0) == -1) return -1;
-    if (fcntl(out,F_GETFL,1) == -1) return -1; safe_close(1);
+    if (fcntl(out,F_GETFL,1) == -1) return -1;
+    safe_close(1);
     if (fcntl(out,F_DUPFD,1) == -1) return -1;
 #else
     if (dup2(in,0) == -1) return -1;
@@ -3831,8 +3833,9 @@ int redir_main(struct redir_t *redir,
       int hasnexturl = (strlen((char *)conn.s_params.url) > 5);
 
       if (!hasnexturl) {
-	if (_options.challengetimeout)
+	if (_options.challengetimeout) {
 	  redir_memcopy(REDIR_CHALLENGE);
+	}
       } else {
 	msg.mtype = REDIR_NOTYET;
       }
