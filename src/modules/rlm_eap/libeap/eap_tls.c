@@ -129,7 +129,7 @@ int eaptls_success(EAP_HANDLER *handler, int peap_flag)
 	    (((vp = pairfind(request->config_items, 1127)) != NULL) &&
 	     (vp->vp_integer == 0))) {
 		SSL_CTX_remove_session(tls_session->ctx,
-				       tls_session->ssl->session);
+				       tls_session->ssl);
 		tls_session->allow_session_resumption = 0;
 
 		/*
@@ -162,12 +162,12 @@ int eaptls_success(EAP_HANDLER *handler, int peap_flag)
 		}
 
 		if (vps) {
-			SSL_SESSION_set_ex_data(tls_session->ssl->session,
+			SSL_SESSION_set_ex_data(tls_session->ssl,
 						eaptls_session_idx, vps);
 		} else {
 			RDEBUG2("WARNING: No information to cache: session caching will be disabled for this session.");
 			SSL_CTX_remove_session(tls_session->ctx,
-					       tls_session->ssl->session);
+					       tls_session->ssl);
 		}
 
 		/*
@@ -176,7 +176,7 @@ int eaptls_success(EAP_HANDLER *handler, int peap_flag)
 		 */
 	} else {
 	       
-		vps = SSL_SESSION_get_ex_data(tls_session->ssl->session,
+		vps = SSL_SESSION_get_ex_data(tls_session->ssl,
 					     eaptls_session_idx);
 		if (!vps) {
 			RDEBUG("WARNING: No information in cached session!");
@@ -241,7 +241,7 @@ int eaptls_fail(EAP_HANDLER *handler, int peap_flag)
 	/*
 	 *	Force the session to NOT be cached.
 	 */
-	SSL_CTX_remove_session(tls_session->ctx, tls_session->ssl->session);
+	SSL_CTX_remove_session(tls_session->ctx, tls_session->ssl);
 
 	eaptls_compose(handler->eap_ds, &reply);
 
