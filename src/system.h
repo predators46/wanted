@@ -77,7 +77,6 @@
 #endif
 
 #ifdef HAVE_SYS_SYSINFO_H
-#define _LINUX_SYSINFO_H
 #include <sys/sysinfo.h>
 #endif
 
@@ -162,6 +161,10 @@
 
 #ifdef HAVE_NET_IF_TUN_H
 #include <net/if_tun.h>
+#endif
+
+#ifdef HAVE_NET_ETHERNET_H
+#include <net/ethernet.h>
 #endif
 
 #ifdef HAVE_ASM_TYPES_H
