@@ -90,7 +90,11 @@ static DEFINE_MUTEX(coova_mutex);
 
 #ifdef CONFIG_PROC_FS
 static struct proc_dir_entry *coova_proc_dir;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,5,0)
+static const struct proc_ops coova_old_fops, coova_mt_fops;
+#else
 static const struct file_operations coova_old_fops, coova_mt_fops;
+#endif
 #endif
 
 static u_int32_t hash_rnd;
@@ -292,6 +296,8 @@ static int coova_mt_check(const struct xt_mtchk_param *par)
 	struct coova_table *t;
 #ifdef CONFIG_PROC_FS
 	struct proc_dir_entry *pde;
+	kuid_t uid;
+	kgid_t gid;
 #endif
 	unsigned i;
 	int ret = 0;
@@ -330,8 +336,9 @@ static int coova_mt_check(const struct xt_mtchk_param *par)
 		ret = -ENOMEM;
 		goto out;
 	}
-	pde->uid = ip_list_uid;
-	pde->gid = ip_list_gid;
+	uid = make_kuid(&init_user_ns, ip_list_uid);
+	gid = make_kgid(&init_user_ns, ip_list_gid);
+	proc_set_user(pde, uid, gid);
 #endif
 	spin_lock_bh(&coova_lock);
 	list_add_tail(&t->list, &tables);
@@ -445,14 +452,13 @@ static const struct seq_operations coova_seq_ops = {
 
 static int coova_seq_open(struct inode *inode, struct file *file)
 {
-	struct proc_dir_entry *pde = PDE(inode);
 	struct coova_iter_state *st;
 
 	st = __seq_open_private(file, &coova_seq_ops, sizeof(*st));
 	if (st == NULL)
 		return -ENOMEM;
 
-	st->table = pde->data;
+	st->table = PDE_DATA(inode);
 	return 0;
 }
 
@@ -460,8 +466,7 @@ static ssize_t
 coova_mt_proc_write(struct file *file, const char __user *input,
 		    size_t size, loff_t *loff)
 {
-	const struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
-	struct coova_table *t = pde->data;
+	struct coova_table *t = PDE_DATA(file->f_path.dentry->d_inode);
 	struct coova_entry *e;
 	char buf[sizeof("+b335:1d35:1e55:dead:c0de:1715:5afe:c0de")];
 	const char *c = buf;
@@ -555,6 +560,14 @@ coova_mt_proc_write(struct file *file, const char __user *input,
 	return size + 1;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,5,0)
+static const struct proc_ops coova_mt_fops = {
+	.proc_open    = coova_seq_open,
+	.proc_read    = seq_read,
+	.proc_write   = coova_mt_proc_write,
+	.proc_release = seq_release_private,
+};
+#else
 static const struct file_operations coova_mt_fops = {
 	.open    = coova_seq_open,
 	.read    = seq_read,
@@ -562,6 +575,7 @@ static const struct file_operations coova_mt_fops = {
 	.release = seq_release_private,
 	.owner   = THIS_MODULE,
 };
+#endif
 #endif /* CONFIG_PROC_FS */
 
 static struct xt_match coova_mt_reg[] __read_mostly = {
