@@ -368,7 +368,7 @@ static void     fieldcpy(char *, char **);
 static VALUE_PAIR *ldap_pairget(LDAP *, LDAPMessage *, TLDAP_RADIUS *,VALUE_PAIR **,int, ldap_instance *);
 static int ldap_groupcmp(void *, REQUEST *, VALUE_PAIR *, VALUE_PAIR *, VALUE_PAIR *, VALUE_PAIR **);
 static size_t ldap_xlat(void *, REQUEST *, char *, char *, size_t, RADIUS_ESCAPE_STRING);
-static LDAP    *ldap_connect(void *instance, const char *, const char *, int, int *, char **);
+static LDAP    *oldap_connect(void *instance, const char *, const char *, int, int *, char **);
 static int     read_mappings(ldap_instance* inst);
 
 static inline int ldap_get_conn(LDAP_CONN *conns,LDAP_CONN **ret,
@@ -873,7 +873,7 @@ retry:
 				inst->xlat_name);
 			ldap_unbind_s(conn->ld);
 		}
-		if ((conn->ld = ldap_connect(instance, inst->login,
+		if ((conn->ld = oldap_connect(instance, inst->login,
 					     inst->password, 0, &res, NULL)) == NULL) {
 			radlog(L_ERR, "  [%s] (re)connection attempt failed",
 				inst->xlat_name);
@@ -1935,7 +1935,7 @@ static int ldap_authenticate(void *instance, REQUEST * request)
 	RDEBUG("user DN: %s", user_dn);
 
 #ifndef NOVELL
-	ld_user = ldap_connect(instance, user_dn, request->password->vp_strvalue,
+	ld_user = oldap_connect(instance, user_dn, request->password->vp_strvalue,
 			       1, &res, NULL);
 #else
 	/* Don't perform eDirectory APC again after attempting to bind here. */
@@ -2265,7 +2265,7 @@ static int ldap_rebind(LDAP *ld, LDAP_CONST char *url,
 }
 #endif
 
-static LDAP *ldap_connect(void *instance, const char *dn, const char *password,
+static LDAP *oldap_connect(void *instance, const char *dn, const char *password,
 			  int auth, int *result, char **err)
 {
 	ldap_instance  *inst = instance;
