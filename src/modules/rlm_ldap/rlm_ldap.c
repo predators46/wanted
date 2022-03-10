@@ -368,7 +368,7 @@ static void     fieldcpy(char *, char **);
 static VALUE_PAIR *ldap_pairget(LDAP *, LDAPMessage *, TLDAP_RADIUS *,VALUE_PAIR **,int, ldap_instance *);
 static int ldap_groupcmp(void *, REQUEST *, VALUE_PAIR *, VALUE_PAIR *, VALUE_PAIR *, VALUE_PAIR **);
 static size_t ldap_xlat(void *, REQUEST *, char *, char *, size_t, RADIUS_ESCAPE_STRING);
-static LDAP    *ldap_connect(void *instance, const char *, const char *, int, int *, char **);
+static LDAP    *oldap_connect(void *instance, const char *, const char *, int, int *, char **);
 static int     read_mappings(ldap_instance* inst);
 
 static inline int ldap_get_conn(LDAP_CONN *conns,LDAP_CONN **ret,
