@@ -46,7 +46,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     endif()
 
     if (BUILD_STATIC)
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -lpthread -lc -lgcc_eh")
     endif()
 
     add_definitions(/D_GNU_SOURCE)
@@ -97,7 +97,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES Clang)
     endif()
 
     if (BUILD_STATIC)
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -lpthread -lc -lgcc_eh")
     endif()
 
 endif()
