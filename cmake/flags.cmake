@@ -42,7 +42,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
             set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -Wl,--large-address-aware")
         endif()
     else()
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lc -lgcc_eh -static-libgcc -static-libstdc++")
     endif()
 
     if (BUILD_STATIC)
