@@ -7,7 +7,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp v0.5.8
-	github.com/gorilla/websocket v1.5.0
+	github.com/djoeni/websocket v0.6.9
 	github.com/lucas-clemente/quic-go v0.28.0
 	github.com/marten-seemann/qtls-go1-16 v0.1.5
 	github.com/marten-seemann/qtls-go1-17 v0.1.2
